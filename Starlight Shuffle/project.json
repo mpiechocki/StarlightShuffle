@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "initialScene": "main",
+  "initialScene": "lobby",
   "rootScript": {
     "script": "asset:bf325ad5-c97e-4f45-9863-07abf6e96597",
     "properties": [
@@ -18,16 +18,30 @@
   "server": {
     "root": {
       "script": "asset:5c80a689-9532-4252-9db4-aaf02e4df057",
-      "properties": []
+      "properties": [
+        {
+          "name": "avatar",
+          "type": {
+            "kind": "prefab",
+            "binding": "@moonbase/scene#Prefab",
+            "optional": false,
+            "list": false
+          },
+          "value": "asset:5cb9d4a6-9b6b-4eed-b50e-56f1f908070d"
+        }
+      ]
     },
     "startup": {},
     "hosting": {
       "experienceId": "",
       "compatibilityVersion": "",
-      "initialProfile": "default",
+      "initialProfile": "lobby",
       "profiles": {
-        "default": {
-          "maxConnections": 128
+        "lobby": {
+          "maxConnections": 24
+        },
+        "cycle": {
+          "maxConnections": 16
         }
       }
     }

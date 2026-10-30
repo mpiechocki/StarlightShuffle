@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "root": "avatar",
+  "entities": [
+    {
+      "id": "avatar",
+      "name": "Avatar",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "LuaScript",
+          "id": "movement",
+          "script": "asset:a46d655a-e80a-47a6-922e-020e76ecd0cb",
+          "enabled": true,
+          "properties": [
+            {
+              "name": "speed",
+              "type": {
+                "kind": "number",
+                "optional": false,
+                "list": false
+              },
+              "value": 3.0
+            },
+            {
+              "name": "stoppingDistance",
+              "type": {
+                "kind": "number",
+                "optional": false,
+                "list": false
+              },
+              "value": 0.05
+            }
+          ]
+        },
+        {
+          "type": "Collider",
+          "id": "collider",
+          "w": 0.5,
+          "d": 0.5,
+          "h": 1.8,
+          "layer": "Player",
+          "isTrigger": false
+        }
+      ]
+    },
+    {
+      "id": "visual",
+      "name": "Avatar visual",
+      "parent": "avatar",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "AvatarRenderer",
+          "id": "renderer",
+          "appearance": {
+            "width": 221,
+            "height": 340,
+            "anchorX": 110.5,
+            "anchorY": 340.0,
+            "items": []
+          },
+          "pixelsPerUnit": 176.0,
+          "billboard": true,
+          "flipX": false,
+          "castShadow": true,
+          "animate": true,
+          "shadowStrength": 1.0,
+          "shadowFalloff": 1.0,
+          "blobShadow": true,
+          "blobOpacity": 0.25,
+          "blobSoftness": 0.0,
+          "blobWidth": 0.8,
+          "blobDepth": 0.5,
+          "blobOffset": 0.02,
+          "blobProbeHeight": 0.3,
+          "blobMaxDistance": 2.0
+        }
+      ]
+    }
+  ]
+}
