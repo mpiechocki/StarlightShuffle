@@ -20,6 +20,7 @@
 local server = require("@moonbase/server")
 local types = require("@moonbase/types")
 local Games = require("../shared/Games")
+local Net = require("../shared/Net")
 local Arena = require("./Arena")
 
 export type Context = {
@@ -34,6 +35,10 @@ export type Context = {
 	clock: () -> number,
 	-- Seconds of play left (the whole duration before play starts).
 	remaining: () -> number,
+	-- Seconds until play starts (0 once it has).
+	startsIn: () -> number,
+	-- Who [player] is: their name, outfit and thumbnail (server/People).
+	identity: (player: server.Player) -> Net.Identity?,
 	-- Ends play now, before the time is up.
 	finish: () -> (),
 }

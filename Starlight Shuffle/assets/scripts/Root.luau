@@ -101,6 +101,7 @@ return engine.defineScript({
 		if controls then controls:update(dt) end
 		if multiplayer then multiplayer:update(dt) end
 		if place then place:update(dt) end
+		if controls and place then controls.fixedCamera = place:fixedCamera() end
 		if labels and controls and place then
 			labels:update(if place.place == "lobby" then controls.scene else nil)
 		end

@@ -11,9 +11,12 @@ export type Game = {
 	read blurb: string, -- one line shown while it is about to start
 	read scene: string, -- the scene's asset reference, "scene:<name>"
 	read duration: number, -- seconds of play
+	read intro: number?, -- seconds it is announced before play (Games.INTRO when nil)
 }
 
 local list: {Game} = {
+	{ id = "head_to_head", title = "Head to Head", blurb = "Match your canvas to the reference, head by head.",
+		scene = "scene:head_to_head", duration = 90, intro = 10 },
 	{ id = "minigame_1", title = "Mini-game 1", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_1", duration = 30 },
 	{ id = "minigame_2", title = "Mini-game 2", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_2", duration = 30 },
 	{ id = "minigame_3", title = "Mini-game 3", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_3", duration = 30 },
@@ -26,6 +29,7 @@ for _, game in list do
 end
 
 return table.freeze({
+	INTRO = 5,
 	list = table.freeze(list),
 	-- The mini-game with [id], or nil.
 	get = function(id: string?): Game?

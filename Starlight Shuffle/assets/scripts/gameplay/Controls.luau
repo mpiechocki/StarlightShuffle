@@ -19,6 +19,9 @@ type Fields = {
 	joystick: Joystick?, joystickMoved: boolean, onJoystickChanged: (() -> ())?, disposed: boolean,
 	spatial: SpatialQueries.Controller?, spatialLabel: SpatialQueries.Label?, onLabelChanged: (() -> ())?,
 	showSpatial: boolean,
+	-- Hold the scene's authored camera view instead of following the player
+	-- (a mini-game with a full-screen board); `cameraPose` is that view.
+	fixedCamera: boolean, cameraPose: { position: vector, rotation: vector, fov: number }?,
 	-- Logical pixels covered at the bottom of the view; the camera looks past them.
 	obscured: number,
 	-- Consulted on a plain tap before walking; returning true consumes it
@@ -53,7 +56,7 @@ function Controls.new(): Controller
 		pointers = {}, mode = "none", pinchDistance = 1, pinchX = 0, startZoom = 0.7, startYaw = 0,
 		joystick = nil, joystickMoved = false, onJoystickChanged = nil, disposed = false,
 		spatial = nil, spatialLabel = nil, onLabelChanged = nil,
-		showSpatial = true, onTap = nil, onPress = nil, onPressEnd = nil, pressing = false, captureTap = nil, covered = nil, obscured = 0,
+		showSpatial = true, fixedCamera = false, cameraPose = nil, onTap = nil, onPress = nil, onPressEnd = nil, pressing = false, captureTap = nil, covered = nil, obscured = 0,
 		nearby = {}, sensing = {},
 	} :: Fields, Controls)
 end
@@ -127,6 +130,8 @@ function Controls.attachScene(self: Controller, scene: engine.Scene?)
 	self:stopSensing()
 	self.scene, self.player, self.playerEntity, self.rig = scene, nil, nil, nil
 	self.spatial = nil
+	local camera = if scene then scene.activeCamera else nil
+	self.cameraPose = if camera then { position = camera.transform.position, rotation = camera.transform.rotation, fov = camera.fov } else nil
 	self:updateLabel()
 	-- Players are spawned, so they arrive later through setPlayer.
 end
@@ -291,6 +296,16 @@ function Controls.update(self: Controller, dt: number)
 	if self.disposed or not scene or not scene.isValid or not player or not player.transform.isValid then return end
 	dt = math.clamp(dt, 0, 0.1)
 	local camera = scene.activeCamera
+	local pose = self.cameraPose
+	if self.fixedCamera and camera and pose then
+		-- The avatar still updates; the camera keeps the scene's view.
+		player:update(dt, 0, pose.position)
+		local transform = camera.transform
+		if transform.position ~= pose.position then transform.position = pose.position end
+		if transform.rotation ~= pose.rotation then transform.rotation = pose.rotation end
+		if camera.fov ~= pose.fov then camera.fov = pose.fov end
+		return
+	end
 	local rig: FollowCamera.Controller? = self.rig
 	if camera and (not rig or rig.camera.id ~= camera.id) then
 		local previous = rig

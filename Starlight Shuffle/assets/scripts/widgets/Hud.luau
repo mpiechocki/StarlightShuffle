@@ -33,7 +33,8 @@ end
 
 local function phaseLine(place: Place.Controller): string
 	local round = place.round
-	if not round or round.phase == "waiting" then return "Waiting for players" end
+	if not round then return "Waiting for players" end
+	if round.phase == "waiting" then return if place:remaining() > 0 then "Starting soon…" else "Waiting for players" end
 	local left = Style.clock(place:remaining())
 	if round.phase == "intro" then return "Starts in " .. left end
 	if round.phase == "playing" then return left .. " left" end
@@ -133,7 +134,17 @@ local function build(place: Place.Controller): w.Widget
 	local head: {w.Widget} = {
 		Style.pill(material.star_rounded, if place.starlights then Style.count(place.starlights) else "…", Style.GOLD),
 	}
-	if inCycle then
+	if inCycle and place:minigameOwnsHud() then
+		-- The mini-game shows what is on; keep the way out, and say when it is taken.
+		table.insert(head, w.Spacer({}))
+		if place.paused or place.moving then
+			table.insert(head, Style.pill(material.logout_rounded,
+				if place.moving then "Leaving…" else "Leaving after this", Style.GOLD))
+			table.insert(head, w.SizedBox({width = 8}))
+		end
+		table.insert(head, Style.roundButton(if place.paused then material.play_arrow_rounded else material.pause_rounded,
+			function() place:togglePause() end, place.paused, "pause-play"))
+	elseif inCycle then
 		table.insert(head, w.SizedBox({width = 10}))
 		table.insert(head, w.Expanded({child = cycleHead(place)}))
 	elseif place.place == "lobby" then
@@ -143,7 +154,7 @@ local function build(place: Place.Controller): w.Widget
 	table.insert(layers, w.SafeArea({child = w.Padding({padding = p.EdgeInsets.all(12),
 		child = w.Align({alignment = p.Alignment.topLeft, child = w.Row({
 			crossAxisAlignment = w.CrossAxisAlignment.center, children = head})})})}))
-	local center = if inCycle then introCard(place) or resultsCard(place) else nil
+	local center = if inCycle and not place:minigameOwnsHud() then introCard(place) or resultsCard(place) else nil
 	if center then
 		table.insert(layers, w.IgnorePointer({child = w.Center({child = w.Padding({padding = p.EdgeInsets.all(24), child = center})})}))
 	end

@@ -9,6 +9,7 @@ local engine = require("@moonbase/engine")
 local types = require("@moonbase/types")
 local w = require("@flutter/widgets")
 local Games = require("../shared/Games")
+local Net = require("../shared/Net")
 
 export type Context = {
 	game: Games.Game,
@@ -18,6 +19,13 @@ export type Context = {
 	scene: () -> engine.Scene?,
 	-- Draws `hud` again.
 	refresh: () -> (),
+	-- The cycle's round now (its phase and seconds left), and whether this
+	-- player paused (they leave once this mini-game ends).
+	round: () -> Net.Round?,
+	remaining: () -> number,
+	paused: () -> boolean,
+	-- This player's session id once the server said it (HELLO).
+	me: () -> number?,
 }
 
 export type Minigame = {
@@ -28,6 +36,12 @@ export type Minigame = {
 	-- Taps on the game view; true takes the tap instead of walking there.
 	tap: ((x: number, y: number) -> boolean)?,
 	hud: (() -> w.Widget)?,
+	-- The mini-game draws its own status, announcement and results: the cycle's
+	-- HUD then keeps only your Starlights and the Pause/Play button.
+	ownHud: boolean?,
+	-- The camera holds the scene's authored view instead of following your
+	-- avatar; the mini-game's HUD should then take every touch.
+	fixedCamera: boolean?,
 	dispose: (() -> ())?,
 }
 

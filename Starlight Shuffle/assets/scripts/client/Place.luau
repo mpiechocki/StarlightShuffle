@@ -20,6 +20,7 @@ local FAILED_FOR = 4 -- seconds a failed move shows
 
 type Fields = {
 	place: Net.Place?,
+	session: number?, -- ours, from HELLO
 	starlights: number?,
 	round: Net.Round?,
 	-- game.clock() when the round's phase ends, as received.
@@ -67,6 +68,10 @@ local function openMinigame(self: Controller, id: string?)
 		end,
 		scene = function(): engine.Scene? return self.scene end,
 		refresh = function() changed(self) end,
+		round = function(): Net.Round? return self.round end,
+		remaining = function(): number return self:remaining() end,
+		paused = function(): boolean return self.paused end,
+		me = function(): number? return self.session end,
 	}
 	local ok, made = pcall(module.new, context)
 	if not ok then print(info.id .. " client failed: " .. tostring(made)); return end
@@ -82,7 +87,7 @@ end
 
 function Place.new(): Controller
 	local self = setmetatable({
-		place = nil, starlights = nil, round = nil, endsAt = 0, paused = false, results = nil,
+		place = nil, session = nil, starlights = nil, round = nil, endsAt = 0, paused = false, results = nil,
 		board = nil, boardOpen = false, moving = false, failed = nil, failedAt = 0,
 		connection = "offline", minigame = nil, minigameId = nil, scene = nil, listeners = {},
 		onTransferred = nil, unsubscribe = nil, unwatch = nil, shownSeconds = -1,
@@ -90,7 +95,7 @@ function Place.new(): Controller
 	self.unsubscribe = client.onMessage(function(kind: unknown, a: unknown, ...: unknown)
 		if kind == Net.HELLO then
 			local place = Net.place(select(2, ...))
-			if place then self.place = place; changed(self) end
+			if place then self.place, self.session = place, Net.id(a); changed(self) end
 		elseif kind == Net.STARLIGHTS then
 			local total = Net.starlights(a)
 			if total then self.starlights = total; changed(self) end
@@ -188,6 +193,18 @@ function Place.tap(self: Controller, x: number, y: number): boolean
 	return ok and taken == true
 end
 
+-- Whether the current mini-game draws its own status and results.
+function Place.minigameOwnsHud(self: Controller): boolean
+	local minigame = self.minigame
+	return self.place == "cycle" and minigame ~= nil and minigame.ownHud == true
+end
+
+-- Whether the current mini-game holds the scene's own camera view.
+function Place.fixedCamera(self: Controller): boolean
+	local minigame = self.minigame
+	return self.place == "cycle" and minigame ~= nil and minigame.fixedCamera == true
+end
+
 -- The current mini-game's HUD, if it draws one.
 function Place.minigameHud(self: Controller): any
 	local minigame = self.minigame
@@ -204,7 +221,7 @@ function Place.update(self: Controller, dt: number)
 		if not ok then print("Mini-game update failed: " .. tostring(err)) end
 	end
 	-- The countdown rebuilds the HUD once a second; a failed move clears itself.
-	local seconds = if self.round and self.round.phase ~= "waiting" then math.ceil(self:remaining()) else -1
+	local seconds = if self.round then math.ceil(self:remaining()) else -1
 	local dirty = seconds ~= self.shownSeconds
 	self.shownSeconds = seconds
 	if self.failed and game.clock() - self.failedAt > FAILED_FOR then

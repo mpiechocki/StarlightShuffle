@@ -3,7 +3,8 @@
 -- A mini-game cycle: shared/Games played one after another, looping, by
 -- everyone in this place. Each mini-game goes
 --
---   intro (its scene loads, everyone lands in it and it is announced)
+--   intro (its scene loads, everyone lands in it and it is announced, for
+--   its `intro` seconds)
 --   -> playing (its duration) -> results (what everyone earned)
 --
 -- and then the next one starts. Players who arrive join the mini-game under
@@ -22,14 +23,17 @@ local Travel = require("./Travel")
 local Minigame = require("./Minigame")
 local Modules = require("./Games")
 
-local INTRO = 5 -- seconds a mini-game is announced before play
 local RESULTS = 7 -- seconds the results show
+-- Seconds an empty cycle waits after its first arrival before announcing a
+-- mini-game, so a group sent together (who land one by one) all take part.
+local GATHER = 3
 local MAX_AWARD = 1000 -- Starlights one award may add
 
 export type Host = {
 	arena: Arena.Arena,
 	starlights: Starlights.Starlights,
 	name: (session: number) -> string?,
+	identity: (session: number) -> Net.Identity?,
 	-- Tells [player] their new lifetime total.
 	total: (player: server.Player, total: number) -> (),
 }
@@ -68,10 +72,11 @@ function Cycle.new(host: Host): Cycle
 	local endsAt = 0 -- server clock when the phase ends
 	local playEnds = 0 -- server clock when play ends (or would)
 	local earned: {[number]: number} = {} -- this mini-game's Starlights by session
+	local loaded: string? = nil -- a scene loaded ahead of its intro, while gathering
 
 	local function roundValue(): types.Value
 		return Net.roundValue({ phase = phase, game = if game then game.id else nil, round = round,
-			remaining = if phase == "waiting" then 0 else endsAt - server.clock() })
+			remaining = if phase == "waiting" and endsAt == 0 then 0 else endsAt - server.clock() })
 	end
 
 	local function broadcast()
@@ -117,6 +122,12 @@ function Cycle.new(host: Host): Cycle
 			remaining = function(): number
 				return if phase == "playing" then math.max(0, playEnds - server.clock()) else current.duration
 			end,
+			startsIn = function(): number
+				return if game == current and phase == "intro" then math.max(0, endsAt - server.clock()) else 0
+			end,
+			identity = function(player: server.Player): Net.Identity?
+				return host.identity(player.session_id)
+			end,
 			finish = function()
 				if game == current and phase == "playing" then finishPlay() end
 			end,
@@ -128,17 +139,20 @@ function Cycle.new(host: Host): Cycle
 		local nextGame, nextIndex = Games.after(index)
 		index, game, round = nextIndex, nextGame, round + 1
 		table.clear(earned)
-		phase, endsAt = "intro", server.clock() + INTRO
-		host.arena.load(nextGame.scene)
-		local module = Modules[nextGame.id]
+		phase, endsAt = "intro", server.clock() + (nextGame.intro or Games.INTRO)
+		if loaded ~= nextGame.scene then host.arena.load(nextGame.scene) end
+		loaded = nil -- the next intro loads afresh: this mini-game will have changed it
 		running = nil
+		-- Announced first, so clients have the mini-game's module ready for
+		-- whatever it sends as it starts.
+		broadcast()
+		local module = Modules[nextGame.id]
 		if module then
 			local ok, made = pcall(module.new, context(nextGame))
 			if ok then running = made else print(nextGame.id .. ".new failed: " .. tostring(made)) end
 		else
 			print("No server module for mini-game " .. nextGame.id)
 		end
-		broadcast()
 	end
 
 	local function play()
@@ -235,7 +249,14 @@ function Cycle.new(host: Host): Cycle
 			host.arena.join(player)
 			server.notifyPlayers({player}, Net.PAUSED, false)
 			if phase == "waiting" then
-				intro()
+				if endsAt == 0 then
+					-- Gather: show the coming mini-game's scene while the rest arrive.
+					endsAt = server.clock() + GATHER
+					local coming = Games.after(index)
+					host.arena.load(coming.scene)
+					loaded = coming.scene
+				end
+				server.notifyPlayers({player}, Net.ROUND, roundValue())
 			else
 				server.notifyPlayers({player}, Net.ROUND, roundValue())
 				if phase == "intro" or phase == "playing" then call("join", player) end
@@ -269,8 +290,13 @@ function Cycle.new(host: Host): Cycle
 			return false
 		end,
 		update = function(dt: number)
-			if phase == "waiting" then return end
 			local now = server.clock()
+			if phase == "waiting" then
+				if endsAt > 0 and now >= endsAt then
+					if anyone() then intro() else endsAt = 0 end
+				end
+				return
+			end
 			if phase == "playing" then call("update", dt) end
 			if now < endsAt then return end
 			if phase == "intro" then

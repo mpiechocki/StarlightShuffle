@@ -62,9 +62,55 @@ They talk to each other through `context.send(...)` on either side, which arrive
 scene loading, avatars, timing, results and Starlights; a mini-game only decides what
 happens during play and calls `context.award(player, n)`.
 
-The three mini-games here (`minigame_1`, `minigame_2`, `minigame_3`) are blank: players
-walk around a coloured arena for 30 s, and everyone still there at the end earns
-1 Starlight for taking part, so the leaderboard has something to show.
+A mini-game's `shared/Games.luau` row may set `intro` (seconds announced before play,
+default 5). Its client module may set `ownHud` (it draws its own status and results; the
+cycle's HUD keeps only Starlights and Pause/Play) and `fixedCamera` (the camera holds
+the scene's authored view instead of following the avatar).
+
+The cycle plays, in order:
+
+- **Head to Head** (`head_to_head`, first): players race to reproduce a shared 3×3
+  reference board, with avatar heads instead of colours. See below.
+- `minigame_1`, `minigame_2`, `minigame_3`: blank. Players walk around a coloured
+  arena for 30 s, and everyone still there at the end earns 1 Starlight for taking part.
+
+An empty cycle waits 3 s after its first arrival before announcing a mini-game, so a
+group sent together all take part in it.
+
+### Head to Head
+
+Files: `minigames/head_to_head/` holds `Rules` (shared rules and wire format), `Round`
+(the authoritative round; `Server` adapts the cycle's context to it), `Client` (state,
+optimistic taps, reconciliation), `Board` (the screen) and `Heads` with `Library` (the
+library artwork). The scene `head_to_head` is the pastel art room, seen from a fixed
+camera; avatars stand behind it.
+
+- **Players.** Everyone in the cycle when Head to Head is announced takes part, and the
+  list is frozen then. Anyone who arrives later watches and plays the next mini-game.
+- **Pool.** Every participant's head, plus distinct library heads until there are 8
+  (none with 8 or more players), shuffled into a fixed tap cycle. Each head has its own
+  outline colour. The server draws all of it and sends the same copy to everyone. Player
+  heads are cropped from their outfit image. Library heads are the 8 approved images
+  from the prototype, cropped to their heads, in `assets/textures/head_to_head/`. They
+  ship with the scene through its `library-heads` entity.
+- **Round.** A 10 s preparation (the cycle's intro) shows the instructions in the
+  reference's place, with the canvas empty and disabled. The reference reaches clients
+  only when 90 s of play starts.
+- **Play.** The server owns every canvas. Clients send tap actions with a sequence each.
+  The server applies each sequence once, in order, and only during play, before the
+  deadline and on an unfinished canvas. It answers each tap with the canvas, which the
+  client reconciles with taps it already showed. Nine matches complete and lock a
+  canvas, with the server's elapsed time and a completion sequence for ties. Play ends
+  at 90 s, or when every connected participant has finished.
+- **Podium.** The three fastest completed boards win 5, 3 and 2 Starlights; incomplete
+  boards never place. The podium shows during the cycle's results, then the cycle moves on.
+- **Drops.** A participant who disconnects keeps their canvas, and any finish already
+  validated. If they come back to the same cycle before the end, they carry on. The timer
+  never stops. An award goes only to a finisher who is still connected.
+
+`tests/head_to_head_test.luau` drives the round through a fake context: pool sizes for
+3, 8 and 10 players, tap validation (preparation, duplicates, deadline), completion and
+lock, ranking and ties, reconnection and latecomers.
 
 ### Adding a mini-game
 

@@ -54,7 +54,8 @@ return server.defineScript({
 		end
 		local mode: Mode
 		if place == "cycle" then
-			local running = Cycle.new({ arena = world, starlights = starlights, name = people.name, total = total })
+			local running = Cycle.new({ arena = world, starlights = starlights, name = people.name,
+				identity = people.identity, total = total })
 			cycle = running
 			mode = running
 		else
