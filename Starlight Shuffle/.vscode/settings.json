@@ -1,0 +1,30 @@
+{
+  "files.exclude": {
+    "**/*.meta": true,
+    "build": true,
+    "**/*.ao.bin": true,
+    "**/*.lighting.bin": true,
+    "**/*.nav.bin": true
+  },
+  "files.associations": {
+    "*.lua": "luau",
+    "*.meta": "json"
+  },
+  "luau-lsp.platform.type": "standard",
+  "luau-lsp.sourcemap.enabled": false,
+  "luau-lsp.studioPlugin.enabled": false,
+  "luau-lsp.fflags.enableNewSolver": true,
+  "luau-lsp.fflags.enableByDefault": true,
+  "luau-lsp.fflags.sync": false,
+  "luau-lsp.ignoreGlobs": [
+    "**/build/**"
+  ],
+  "luau-lsp.completion.imports.ignoreGlobs": [
+    "**/build/**"
+  ],
+  "luau-lsp.types.definitionFiles": {
+    "@flutter_luau": ".moonbase/sdk/packages/moonbase_bindings/generated/flutter_luau.d.luau",
+    "@moonbase_engine": ".moonbase/sdk/packages/moonbase_runtime/generated/moonbase_engine.d.luau",
+    "@moonbase_script": ".moonbase/sdk/packages/moonbase_runtime/definitions/script.d.luau"
+  }
+}

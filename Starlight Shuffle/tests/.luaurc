@@ -1,0 +1,6 @@
+{
+  "aliases": {
+    "project": "../assets/scripts",
+    "tests": "."
+  }
+}

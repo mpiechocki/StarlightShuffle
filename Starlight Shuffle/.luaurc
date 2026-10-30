@@ -1,0 +1,15 @@
+{
+  "languageMode": "strict",
+  "aliases": {
+    "project": "assets/scripts",
+    "tests": "tests",
+    "es": ".moonbase/sdk/packages/moonbase_bindings/generated/luau/es",
+    "async": ".moonbase/sdk/packages/moonbase_bindings/generated/luau/async",
+    "flutter": ".moonbase/sdk/packages/moonbase_bindings/generated/luau/flutter",
+    "dart": ".moonbase/sdk/packages/moonbase_bindings/generated/luau/dart",
+    "flutter_luau": ".moonbase/sdk/packages/moonbase_bindings/generated/luau/flutter_luau",
+    "icons": ".moonbase/sdk/packages/moonbase_bindings/generated/luau/icons",
+    "fonts": ".moonbase/sdk/packages/moonbase_bindings/generated/luau/fonts",
+    "moonbase": ".moonbase/sdk/packages/moonbase_runtime/luau/moonbase"
+  }
+}

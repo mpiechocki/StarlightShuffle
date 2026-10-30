@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "initialScene": "main",
+  "rootScript": {
+    "script": "asset:bf325ad5-c97e-4f45-9863-07abf6e96597",
+    "properties": [
+      {
+        "name": "title",
+        "type": {
+          "kind": "string",
+          "optional": false,
+          "list": false
+        },
+        "value": "Starlight Shuffle"
+      }
+    ]
+  },
+  "server": {
+    "root": {
+      "script": "asset:5c80a689-9532-4252-9db4-aaf02e4df057",
+      "properties": []
+    },
+    "startup": {},
+    "hosting": {
+      "experienceId": "",
+      "compatibilityVersion": "",
+      "initialProfile": "default",
+      "profiles": {
+        "default": {
+          "maxConnections": 128
+        }
+      }
+    }
+  },
+  "layers": [
+    "Default",
+    "Player",
+    "Interactable"
+  ],
+  "collisionIgnore": []
+}
