@@ -78,7 +78,8 @@ function GameUi.countdown(n: number): w.Widget
 			shadows = {ui.Shadow({color = color(0x66a588be), offset = ui.Offset({dx = 3, dy = 4}), blurRadius = 0})}})})})})
 end
 
-export type PodiumRow = { place: number, name: string, outfit: {number}?, points: number, mine: boolean }
+-- `metric` replaces the points text (Star Pass shows passes).
+export type PodiumRow = { place: number, name: string, outfit: {number}?, points: number, mine: boolean, metric: string? }
 export type Podium = { heading: string, summary: string, rows: {PodiumRow}, footer: string }
 
 -- The results: THAT'S A WRAP, an italic heading, one summary line and up to
@@ -101,7 +102,8 @@ function GameUi.podium(props: Podium): w.Widget
 				w.SizedBox({width = 10}),
 				w.Expanded({child = w.Text({data = if row.mine then "you" else row.name, maxLines = 1, overflow = w.TextOverflow.ellipsis,
 					style = style(15, GameUi.TEXT, ui.FontWeight.w800)})}),
-				w.Text({data = row.points .. (if math.abs(row.points) == 1 then " pt" else " pts"), style = style(14, GameUi.SOFT, ui.FontWeight.w800)}),
+				w.Text({data = row.metric or (row.points .. (if math.abs(row.points) == 1 then " pt" else " pts")),
+					style = style(14, GameUi.SOFT, ui.FontWeight.w800)}),
 			}})}))
 	end
 	return w.Stack({fit = w.StackFit.expand, children = {

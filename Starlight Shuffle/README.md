@@ -63,7 +63,7 @@ scene loading, avatars, timing, results and Starlights; a mini-game only decides
 happens during play and calls `context.award(player, n)`.
 
 A mini-game's `shared/Games.luau` row may set `intro` (seconds announced before play,
-default 5). Its client module may set `ownHud` (it draws its own status and results; the
+default 5) and `minPlayers`: the cycle skips that game in rounds with fewer players. Its client module may set `ownHud` (it draws its own status and results; the
 cycle's HUD keeps only Starlights and Pause/Play) and `fixedCamera` (the camera holds
 the scene's authored view instead of following the avatar).
 
@@ -75,6 +75,8 @@ The cycle plays, in order:
   fall into each miner's strike circle, and a tap anywhere swings. See below.
 - **Lucky Shot** (`lucky_shot`, third): a 45 s race to tap clouds in one shared sky
   with a slingshot. See below.
+- **Star Pass** (`star_pass`, fourth; needs 2 players): hot potato with glowing stars,
+  played in waves until one player is left. See below.
 - `minigame_1`, `minigame_2`, `minigame_3`: blank. Players walk around a coloured
   arena for 30 s, and everyone still there at the end earns 1 Starlight for taking part.
 
@@ -203,6 +205,52 @@ adapts the cycle's context to it), `Crowd` (where every competitor stands), `Cli
 layouts at 1/2/4/12/24/64 players, a two-player race for one cloud, the reload and
 duplicates, storms below zero, made-up and stale clouds, the deadline and bounded tap
 times, reconnection, and results sent once.
+
+### Star Pass
+
+Files: `minigames/star_pass/` holds `Rules` (versioned tuning, star supply, wave timing,
+target choice, ranking, wire format), `Round` (the authoritative match; `Server` adapts
+the cycle's context to it), `Crowd` (the survivors' formation), `Client`, `Stage`, and
+`Assets` with `SceneAssets`. The approved garden and pixel star are in
+`assets/textures/star_pass/`; the star is scaled to 160 px, and the originals are kept,
+unshipped, in `art/star_pass/`. `tools/star_pass_audio.py` makes the tick and tock,
+catch, pass, burst and a quiet loop.
+
+- **Match.** Everyone in the cycle when it is announced competes, seated by account id;
+  later arrivals watch. After the shared 10 s countdown, waves run until one player is
+  left; there is no match clock.
+- **Waves.** Each wave gives `min(5, ceil(alive / 6), alive − 1)` stars to distinct
+  survivors, chosen by a server shuffle. All of them burst at one `burstAt`:
+  `max(6, 10.5 − 0.35 × wave) + random(0, 1.3)` seconds after the wave starts.
+- **Bursts and recaps.** At the burst, every holder is out together. A 3.4 s recap
+  ("Out this round", only that burst's players) runs to the next wave, which has fewer
+  stars. After the final burst the recap runs once more, then the match ends
+  (`context.finish`) and the cycle shows the podium.
+- **Charge and pass.** A holder holds the button for 0.65 s, which the server checks
+  from when it saw the hold begin. The holder then picks one of up to three players the
+  server offers. The choices exclude other holders, and exclude the previous holder for
+  1.2 s unless nobody else is free; slots stay put as eligibility changes. Every catch
+  gets a new possession number, and every intent names it, so late or repeated intents
+  never touch a later catch. The first valid pass in server order wins; the loser
+  learns why and nothing else changes. A pass never moves the burst.
+- **Field.** Survivors are stable nodes keyed by account id. They slide into a tighter
+  formation after each burst (0.12 s delay, then 0.58 s); the eliminated fade up and
+  are removed after 0.36 s. If you are out, the first survivor in seat order takes the
+  foreground under their own name.
+- **Ticking.** One shared tick tied to `burstAt`: every 0.8 / 0.52 / 0.32 / 0.17 s,
+  louder while you hold a star, silent between waves.
+- **Drops.** A competitor away for 20 s forfeits; their star is removed and the wave
+  keeps its burst. Reconnecting before that keeps everything.
+- **Results.** Survivor first, then later eliminations, then passes, then seat. Five,
+  three and two Starlights for the podium. If the 300 s safety timeout in its Games row
+  is ever reached, survivors rank by passes, then seat.
+
+`tests/star_pass_test.luau` checks star supply, wave length and tick pace, target choice
+(returns, the two-player fallback, stable slots), waves at 2–40 players,
+possession-scoped charging (early, cancelled, stale, wrong holder, duplicates), passing
+(catch time, new possession, no carried charge, replays), a two-sender race for one
+target, bursts and recaps, a match to one survivor with results sent once, ranking ties,
+reconnects and forfeits, latecomers, and the crowd formation at 2–64 players.
 
 `tests/head_to_head_test.luau` drives the round through a fake context: pool sizes for
 3, 8 and 10 players, tap validation (preparation, duplicates, deadline), completion and

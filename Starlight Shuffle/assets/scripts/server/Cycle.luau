@@ -136,7 +136,14 @@ function Cycle.new(host: Host): Cycle
 
 	-- The next mini-game: load its scene, announce it.
 	local function intro()
+		-- The next mini-game this many players can play (a mini-game may need
+		-- more than are here: it is skipped this time round).
+		local count = #present()
 		local nextGame, nextIndex = Games.after(index)
+		for _ = 1, #Games.list do
+			if (nextGame.minPlayers or 1) <= count then break end
+			nextGame, nextIndex = Games.after(nextIndex)
+		end
 		index, game, round = nextIndex, nextGame, round + 1
 		table.clear(earned)
 		phase, endsAt = "intro", server.clock() + (nextGame.intro or Games.INTRO)
@@ -252,6 +259,8 @@ function Cycle.new(host: Host): Cycle
 				if endsAt == 0 then
 					-- Gather: show the coming mini-game's scene while the rest arrive.
 					endsAt = server.clock() + GATHER
+					-- (Everyone the gather brings counts; a game too big for them is
+					-- skipped at the intro, which then loads its own scene.)
 					local coming = Games.after(index)
 					host.arena.load(coming.scene)
 					loaded = coming.scene

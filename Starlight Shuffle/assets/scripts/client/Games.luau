@@ -5,6 +5,7 @@
 local Minigame = require("./Minigame")
 
 local modules: {[string]: Minigame.Module} = {
+	star_pass = require("../minigames/star_pass/Client"),
 	lucky_shot = require("../minigames/lucky_shot/Client"),
 	blast_mining = require("../minigames/blast_mining/Client"),
 	head_to_head = require("../minigames/head_to_head/Client"),

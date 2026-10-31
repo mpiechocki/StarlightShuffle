@@ -12,6 +12,7 @@ export type Game = {
 	read scene: string, -- the scene's asset reference, "scene:<name>"
 	read duration: number, -- seconds of play
 	read intro: number?, -- seconds it is announced before play (Games.INTRO when nil)
+	read minPlayers: number?, -- skipped in rounds with fewer players than this
 }
 
 local list: {Game} = {
@@ -21,6 +22,8 @@ local list: {Game} = {
 		scene = "scene:blast_mining", duration = 60, intro = 4 },
 	{ id = "lucky_shot", title = "Lucky Shot", blurb = "Tap clouds to fire your slingshot. Avoid storm clouds.",
 		scene = "scene:lucky_shot", duration = 45, intro = 10 },
+	{ id = "star_pass", title = "Star Pass", blurb = "Charge your star and pass it on before it bursts!",
+		scene = "scene:star_pass", duration = 300, intro = 10, minPlayers = 2 },
 	{ id = "minigame_1", title = "Mini-game 1", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_1", duration = 30 },
 	{ id = "minigame_2", title = "Mini-game 2", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_2", duration = 30 },
 	{ id = "minigame_3", title = "Mini-game 3", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_3", duration = 30 },
