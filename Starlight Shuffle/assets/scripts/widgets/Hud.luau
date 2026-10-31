@@ -131,8 +131,9 @@ local function build(place: Place.Controller): w.Widget
 	end
 	-- The head: Starlights on the left, then the cycle's round and Pause/Play,
 	-- or in the lobby the leaderboard (also on the wall, but often out of view).
+	-- The Starlights pill is not a button: taps go through it to the game.
 	local head: {w.Widget} = {
-		Style.pill(material.star_rounded, if place.starlights then Style.count(place.starlights) else "…", Style.GOLD),
+		w.IgnorePointer({child = Style.pill(material.star_rounded, if place.starlights then Style.count(place.starlights) else "…", Style.GOLD)}),
 	}
 	if inCycle and place:minigameOwnsHud() then
 		-- The mini-game shows what is on; keep the way out, and say when it is taken.

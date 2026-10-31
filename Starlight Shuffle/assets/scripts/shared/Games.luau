@@ -17,6 +17,10 @@ export type Game = {
 local list: {Game} = {
 	{ id = "head_to_head", title = "Head to Head", blurb = "Match your canvas to the reference, head by head.",
 		scene = "scene:head_to_head", duration = 90, intro = 10 },
+	{ id = "blast_mining", title = "Blast Mining", blurb = "Swing as each rock lands. Mind the bombs!",
+		scene = "scene:blast_mining", duration = 60, intro = 4 },
+	{ id = "lucky_shot", title = "Lucky Shot", blurb = "Tap clouds to fire your slingshot. Avoid storm clouds.",
+		scene = "scene:lucky_shot", duration = 45, intro = 10 },
 	{ id = "minigame_1", title = "Mini-game 1", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_1", duration = 30 },
 	{ id = "minigame_2", title = "Mini-game 2", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_2", duration = 30 },
 	{ id = "minigame_3", title = "Mini-game 3", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_3", duration = 30 },

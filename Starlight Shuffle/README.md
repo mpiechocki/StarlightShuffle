@@ -71,6 +71,10 @@ The cycle plays, in order:
 
 - **Head to Head** (`head_to_head`, first): players race to reproduce a shared 3×3
   reference board, with avatar heads instead of colours. See below.
+- **Blast Mining** (`blast_mining`, second): a 60 s timing race. Rocks, gems and bombs
+  fall into each miner's strike circle, and a tap anywhere swings. See below.
+- **Lucky Shot** (`lucky_shot`, third): a 45 s race to tap clouds in one shared sky
+  with a slingshot. See below.
 - `minigame_1`, `minigame_2`, `minigame_3`: blank. Players walk around a coloured
   arena for 30 s, and everyone still there at the end earns 1 Starlight for taking part.
 
@@ -107,6 +111,98 @@ camera; avatars stand behind it.
 - **Drops.** A participant who disconnects keeps their canvas, and any finish already
   validated. If they come back to the same cycle before the end, they carry on. The timer
   never stops. An award goes only to a finisher who is still connected.
+
+### Blast Mining
+
+Files: `minigames/blast_mining/` holds `Rules` (all tuning in `Rules.CONFIG`, the
+schedule, scoring, ranking and wire format), `Round` (the authoritative round; `Server`
+adapts the cycle's context to it), `Client` (clock sync, swing prediction and
+reconciliation, audio), `Stage` (the screen), `Art` (the low-poly sprites, drawn as
+cached paths) and `Assets` with `SceneAssets` (the art and audio, which ship with the
+`blast_mining` scene's `cave-assets` entity).
+
+- **Players.** Everyone in the cycle when it is announced mines, each with a stream
+  numbered in that order. The list is frozen then, and later arrivals watch. Each
+  client shows its own miner centred and larger, plus the next and previous connected
+  miners in stream order at the sides, so neighbours don't swap as scores change.
+  Avatars are the players' own outfit renders.
+- **Round.** A 4 s intro (loading, the instruction, the item legend and a 3-2-1 count),
+  then 60 s of play. The server draws every stream's schedule when play starts, from
+  its own random numbers. It discloses each item to everyone only `LEAD` (0.35 s)
+  before it starts falling. Clients animate falls from the server's spawn and strike
+  times on a clock synced by pings.
+- **Swings.** A client sends a swing intent with a sequence number and its estimate of
+  the tap's server time. The server accepts that estimate only up to 150 ms in the past.
+  It takes each sequence once, checks the phase and the 190 ms cooldown (410 ms while
+  a bomb's 900 ms slowdown lasts), and hits at most one unhit item of the swinger's own
+  stream within ±105 ms. Rock +1, gem +3, bomb −3 (never below zero). The client
+  shatters its item at once and undoes that if the server's answer disagrees.
+- **Results.** Points, then whoever reached their final score first, then player id.
+  The top three get 5, 3 and 2 Starlights through the cycle. The results are sent once.
+  A miner who drops keeps their stream, score and slowdown; if they come back to the
+  same cycle, a snapshot restores everything without restarting.
+- **Art and audio.** `assets/textures/blast_mining/cave.png` is the supplied cave.
+  The work-song loop and effects in `assets/audio/blast_mining/` are original and
+  synthesized by `tools/blast_mining_audio.py`; rerun it to regenerate them. Music
+  plays on the app's music bus, effects on its effects bus, so the app's sound
+  settings apply. Music pauses while the app is minimized and stops at the end. With
+  the system's reduced-motion setting, shakes, bobbing, ripples and most particles are
+  off.
+
+`tests/blast_mining_test.luau` checks the schedule's gaps, falls and odds, bounded
+disclosure, timing windows, duplicate sequences, both cooldowns and the bomb slowdown,
+bounded claimed tap times, ignored forged messages, play-time limits, reconnection, and
+idempotent ranked results.
+
+### Shared mini-game pieces
+
+- `widgets/GameUi.luau`: the theme tokens (translucent plum HUD, velvet results, lilac
+  borders), the HUD panel, the pale instruction card, the large countdown and the
+  results podium. Blast Mining and Lucky Shot both use it.
+- `client/ServerClock.luau`: the server clock on a client, synced by SYNC pings.
+- `shared/Standings.luau`: the tie policy (points, then whoever reached their final
+  score first, then player id) and the 5/3/2 Starlight prizes.
+- `widgets/AvatarImage.luau`: a player's full-body render or head portrait from their
+  outfit, with a neutral fallback.
+
+### Lucky Shot
+
+Files: `minigames/lucky_shot/` holds `Rules` (versioned tuning in `Rules.CONFIG`, the
+cloud field, scoring and wire format), `Round` (the authoritative round; `Server`
+adapts the cycle's context to it), `Crowd` (where every competitor stands), `Client`,
+`Stage`, `Art`, and `Assets` with `SceneAssets` (the meadow and audio, shipped by the
+`lucky_shot` scene's `meadow-assets` entity).
+
+- **Players.** Everyone in the cycle when it is announced competes. The roster is
+  frozen then, and seats are numbered by player id and never change. Later arrivals
+  watch the round and play the next mini-game.
+- **Round.** A 10 s shared countdown (the cycle's intro) shows the instruction card
+  and the +1/+2/−1 legend, then a large 3, 2, 1 for its last 3 s. Then 45 s of play.
+  It starts automatically; there is no Start button.
+- **Clouds.** One field shared by everyone, owned by the server. Four clouds at the
+  start, then new ones at a pace and cap set once from the roster's size
+  (`Rules.interval`, `Rules.cap`). Each is announced only 0.12 s before it shows, and
+  lives 1.4 to 1.95 s, up to 0.4 s less by the end. Clouds stay in the cloud zone,
+  clear of the HUD, the reload meter and the crowd.
+- **Shots.** A tap on a cloud sends a shot intent with a sequence number and the tap's
+  server time (taken only up to 150 ms back). The server refuses, at no cost, a shot
+  at a cloud it never announced, outside play (including at or after the deadline) or
+  inside the 850 ms reload. Any other shot takes the reload. Then the first claim the
+  server orders takes the cloud, and later or late shots score nothing. White is +1,
+  gold +2, storm −1 (scores may go below zero).
+- **Feedback.** Only your own claims make a sound. Rivals' shots kick their slingshots
+  and pop their clouds silently.
+- **Crowd.** The whole roster stands in the meadow. You are large in front with a
+  halo and marker; everyone else is in staggered rows by seat, smaller and higher
+  toward the back. A mostly covered rear avatar is drawn a little see-through.
+- **Results and drops.** Results use the shared podium and tie policy. Reconnecting
+  restores your seat, score and reload.
+- **Audio.** `tools/lucky_shot_audio.py` makes the original loop and effects.
+
+`tests/lucky_shot_test.luau` checks the pace and cap, the cloud zone and lifetimes, crowd
+layouts at 1/2/4/12/24/64 players, a two-player race for one cloud, the reload and
+duplicates, storms below zero, made-up and stale clouds, the deadline and bounded tap
+times, reconnection, and results sent once.
 
 `tests/head_to_head_test.luau` drives the round through a fake context: pool sizes for
 3, 8 and 10 players, tap validation (preparation, duplicates, deadline), completion and
