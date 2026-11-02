@@ -77,6 +77,8 @@ The cycle plays, in order:
   with a slingshot. See below.
 - **Star Pass** (`star_pass`, fourth; needs 2 players): hot potato with glowing stars,
   played in waves until one player is left. See below.
+- **Pillow Fight** (`pillow_fight`, fifth): a two-minute free-for-all in rooms of three
+  or four, with filler bots, one winner per room. See below.
 - `minigame_1`, `minigame_2`, `minigame_3`: blank. Players walk around a coloured
   arena for 30 s, and everyone still there at the end earns 1 Starlight for taking part.
 
@@ -160,7 +162,8 @@ idempotent ranked results.
 
 - `widgets/GameUi.luau`: the theme tokens (translucent plum HUD, velvet results, lilac
   borders), the HUD panel, the pale instruction card, the large countdown and the
-  results podium. Blast Mining and Lucky Shot both use it.
+  results card (`wrap`, `row`, `medal`, `portrait`) and the podium built from them.
+  Blast Mining, Lucky Shot, Star Pass and Pillow Fight use it.
 - `client/ServerClock.luau`: the server clock on a client, synced by SYNC pings.
 - `shared/Standings.luau`: the tie policy (points, then whoever reached their final
   score first, then player id) and the 5/3/2 Starlight prizes.
@@ -255,6 +258,56 @@ reconnects and forfeits, latecomers, and the crowd formation at 2–64 players.
 `tests/head_to_head_test.luau` drives the round through a fake context: pool sizes for
 3, 8 and 10 players, tap validation (preparation, duplicates, deadline), completion and
 lock, ranking and ties, reconnection and latecomers.
+
+### Pillow Fight
+
+Files: `minigames/pillow_fight/` holds `Rules` (versioned tuning, grouping, the schedule,
+the one-winner order, wire format), `Round` (the authoritative round, bots included;
+`Server` adapts the cycle's context to it), `Client`, `Model`, `Stage` (arena, HUD,
+controls), `Intro` (how-to examples and the group reveal), `Results`, `Pieces` (avatars,
+the red !, the Throw and Dodge faces, shared by play and the examples), `Art` (the
+pillow drawn from `art/pillow_fight/pillow.svg`, hearts, rings) and `Assets` with
+`SceneAssets`. The bedroom backdrop and the three bot dolls are in
+`assets/textures/pillow_fight/` (originals and notes in `art/pillow_fight/`).
+`tools/pillow_fight_audio.py` ports the prototype's procedural audio: the music-box
+lullaby, your throw's whoosh, the two-note warning ring, the hit thud and the dodge swish.
+
+- **Schedule.** The cycle's 15 s announcement is the how-to card: three five-second
+  examples ("Tap a rival to aim.", "Hold. Then release.", "Red ! means dodge."), with
+  dots to review one. Then the 4 s group reveal (only with several rooms), 3, 2, 1, and
+  120 s of play. With one room the round ends itself 4 s before the cycle's 127 s.
+- **Rooms.** The roster freezes at the announcement. Up to 4 humans: one room of
+  `max(3, H)`; more: `ceil(H / 4)` rooms of four, humans shuffled and dealt round-robin,
+  then labelled bots ("Mallow · bot") fill the gaps. Every participant draws a unique
+  tie-break ticket from one shuffle. Later arrivals watch room 1 and cannot act.
+- **Combat.** Only Throw and Dodge. Throw: the server times the charge from when it saw
+  it begin; under 0.18 s nothing is thrown, 0.9 s or more takes two hearts, past 3.5 s it
+  is cancelled; 1 s cooldown, 1 s flight. Dodge: a 0.48 s window, 2.6 s cooldown. Three
+  hearts; a hit stuns 0.3 s and drops a charge; a knockout respawns in 3 s with 1.2 s of
+  protection. +1 per landed pillow, +3 per knockout. Impacts resolve in time order, so
+  nobody is knocked out twice, and pillows landing at or after the end do nothing.
+  Targets must be standing rivals in the sender's room, checked again on impact.
+- **Screen.** Seats are fixed for the round: you in front, rivals at the back and sides.
+  Aiming moves only the gold ring and chevron. A pillow within 0.42 s of you shows the
+  red ! and lights Dodge; the warning ring plays once per pillow within 0.65 s, never for
+  one your protection or dodge already covers, and never for other players.
+- **Bots** run on the server through the same checks, with seeded randomness (tuning in
+  `Rules.CONFIG.BOT`). They never receive Starlights.
+- **Results.** Each room ranks by score, knockouts, hits, fewer knockouts suffered, then
+  the draw ticket: one winner, unique places. Each human room winner still here gets
+  5 Starlights (the cycle's first prize stands in for the prototype's 100 points). Your
+  room shows first and in full; "Winners from other rooms" lists one winner per other
+  room. A room whose humans all left, or a round the cycle ended early, is aborted and
+  pays nobody.
+- **Drops.** A human away 8 s forfeits: a bot takes their seat with the same hearts,
+  cooldowns and draw ticket and a score of its own, and the results note who left.
+
+`tests/pillow_fight_test.luau` checks grouping for every roster from 1 to 24 humans,
+bot filling and draw tickets, the schedule, charge thresholds and cooldowns, damage,
+stun, knockouts, respawn protection, dodge windows, room isolation and junk intents,
+simultaneous impacts and the end cutoff, every tie-break level, results and rewards
+(once, never to bots), reproducible bots, reconnects and forfeits, latecomers and
+aborted rounds.
 
 ### Adding a mini-game
 

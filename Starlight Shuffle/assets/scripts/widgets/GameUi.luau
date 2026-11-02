@@ -3,7 +3,8 @@
 -- The mini-games' shared chrome, so every game reads as one experience:
 -- theme tokens (translucent plum HUD, velvet-purple results, muted lilac
 -- borders), the HUD panel, the pre-round instruction card and countdown, and
--- the results podium. Game-specific HUD content goes inside these pieces.
+-- the results card, rows and podium. Game-specific HUD content goes inside
+-- these pieces.
 local w = require("@flutter/widgets")
 local p = require("@flutter/painting")
 local r = require("@flutter/rendering")
@@ -78,6 +79,49 @@ function GameUi.countdown(n: number): w.Widget
 			shadows = {ui.Shadow({color = color(0x66a588be), offset = ui.Offset({dx = 3, dy = 4}), blurRadius = 0})}})})})})
 end
 
+-- A podium place's medal: gold, silver, bronze; a plain disc after that.
+function GameUi.medal(place: number, size: number?): w.Widget
+	local d = size or 26
+	return w.Container({width = d, height = d, decoration = p.BoxDecoration({color = color(GameUi.MEDALS[place] or 0xff7a6189),
+		shape = p.BoxShape.circle, border = p.Border.all({color = color(0x66ffffff), width = 1.5})}),
+		child = w.Center({child = w.Text({data = tostring(place),
+			style = style(d * 0.46, if GameUi.MEDALS[place] then color(0xff3a2a24) else GameUi.TEXT, ui.FontWeight.w900)})})})
+end
+
+-- A results row: a rounded plum row, highlighted when it is yours.
+function GameUi.row(child: w.Widget, mine: boolean, key: string?): w.Widget
+	return w.Container({key = if key then w.ValueKey({value = key}) else nil,
+		margin = p.EdgeInsets.only({bottom = 8}), padding = p.EdgeInsets.symmetric({horizontal = 12, vertical = 9}),
+		decoration = p.BoxDecoration({color = if mine then GameUi.ROW_MINE else GameUi.ROW, borderRadius = p.BorderRadius.circular(12),
+			border = if mine then p.Border.all({color = GameUi.BORDER, width = 1}) else nil}),
+		child = child})
+end
+
+-- A small rounded portrait frame around [child] (a head).
+function GameUi.portrait(child: w.Widget): w.Widget
+	return w.ClipRRect({borderRadius = p.BorderRadius.circular(9), child = w.Container({color = color(0x33ffffff), child = child})})
+end
+
+-- The results card over a dim scrim: THAT'S A WRAP above [children], which
+-- scroll inside the card when they do not fit.
+function GameUi.wrap(children: {w.Widget}): w.Widget
+	local content: {w.Widget} = {
+		w.Text({data = "THAT'S A WRAP", style = style(10, GameUi.MUTED, ui.FontWeight.w800, 2)}),
+		w.SizedBox({height = 12}),
+	}
+	for _, child in children do table.insert(content, child) end
+	return w.Stack({fit = w.StackFit.expand, children = {
+		w.Container({color = color(0x80140c22)}),
+		w.SafeArea({child = w.Center({child = w.Padding({padding = p.EdgeInsets.symmetric({horizontal = 15, vertical = 12}), child = w.ConstrainedBox({
+			constraints = r.BoxConstraints({maxWidth = 400}), child = w.Container({
+				decoration = p.BoxDecoration({color = GameUi.PANEL, borderRadius = p.BorderRadius.circular(GameUi.RADIUS),
+					border = p.Border.all({color = GameUi.BORDER, width = 1})}),
+				child = w.SingleChildScrollView({padding = p.EdgeInsets.fromLTRB(18, 26, 18, 18),
+					child = w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = content})}),
+			})})})})}),
+	}})
+end
+
 -- `metric` replaces the points text (Star Pass shows passes).
 export type PodiumRow = { place: number, name: string, outfit: {number}?, points: number, mine: boolean, metric: string? }
 export type Podium = { heading: string, summary: string, rows: {PodiumRow}, footer: string }
@@ -88,44 +132,26 @@ function GameUi.podium(props: Podium): w.Widget
 	local rows: {w.Widget} = {}
 	for _, row in props.rows do
 		if row.place > 3 then break end
-		table.insert(rows, w.Container({key = w.ValueKey({value = "place" .. row.place}),
-			margin = p.EdgeInsets.only({bottom = 8}), padding = p.EdgeInsets.symmetric({horizontal = 12, vertical = 9}),
-			decoration = p.BoxDecoration({color = if row.mine then GameUi.ROW_MINE else GameUi.ROW, borderRadius = p.BorderRadius.circular(12),
-				border = if row.mine then p.Border.all({color = GameUi.BORDER, width = 1}) else nil}),
-			child = w.Row({children = {
-				w.Container({width = 26, height = 26, decoration = p.BoxDecoration({color = color(GameUi.MEDALS[row.place]), shape = p.BoxShape.circle,
-					border = p.Border.all({color = color(0x66ffffff), width = 1.5})}),
-					child = w.Center({child = w.Text({data = tostring(row.place), style = style(12, color(0xff3a2a24), ui.FontWeight.w900)})})}),
-				w.SizedBox({width = 10}),
-				w.ClipRRect({borderRadius = p.BorderRadius.circular(9), child = w.Container({color = color(0x33ffffff),
-					child = AvatarImage.head(row.outfit, 36)})}),
-				w.SizedBox({width = 10}),
-				w.Expanded({child = w.Text({data = if row.mine then "you" else row.name, maxLines = 1, overflow = w.TextOverflow.ellipsis,
-					style = style(15, GameUi.TEXT, ui.FontWeight.w800)})}),
-				w.Text({data = row.metric or (row.points .. (if math.abs(row.points) == 1 then " pt" else " pts")),
-					style = style(14, GameUi.SOFT, ui.FontWeight.w800)}),
-			}})}))
+		table.insert(rows, GameUi.row(w.Row({children = {
+			GameUi.medal(row.place),
+			w.SizedBox({width = 10}),
+			GameUi.portrait(AvatarImage.head(row.outfit, 36)),
+			w.SizedBox({width = 10}),
+			w.Expanded({child = w.Text({data = if row.mine then "you" else row.name, maxLines = 1, overflow = w.TextOverflow.ellipsis,
+				style = style(15, GameUi.TEXT, ui.FontWeight.w800)})}),
+			w.Text({data = row.metric or (row.points .. (if math.abs(row.points) == 1 then " pt" else " pts")),
+				style = style(14, GameUi.SOFT, ui.FontWeight.w800)}),
+		}}), row.mine, "place" .. row.place))
 	end
-	return w.Stack({fit = w.StackFit.expand, children = {
-		w.Container({color = color(0x80140c22)}),
-		w.Center({child = w.Padding({padding = p.EdgeInsets.symmetric({horizontal = 15}), child = w.ConstrainedBox({
-			constraints = r.BoxConstraints({maxWidth = 400}), child = w.Container({
-				padding = p.EdgeInsets.fromLTRB(18, 26, 18, 18),
-				decoration = p.BoxDecoration({color = GameUi.PANEL, borderRadius = p.BorderRadius.circular(GameUi.RADIUS),
-					border = p.Border.all({color = GameUi.BORDER, width = 1})}),
-				child = w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = {
-					w.Text({data = "THAT'S A WRAP", style = style(10, GameUi.MUTED, ui.FontWeight.w800, 2)}),
-					w.SizedBox({height = 12}),
-					w.Text({data = props.heading, style = style(28, GameUi.TEXT, ui.FontWeight.w700, -0.5, true)}),
-					w.SizedBox({height = 10}),
-					w.Text({data = props.summary, style = style(13, GameUi.SOFT)}),
-					w.SizedBox({height = 18}),
-					w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = rows}),
-					w.SizedBox({height = 6}),
-					w.Text({data = props.footer, textAlign = ui.TextAlign.center, style = style(12, GameUi.MUTED, ui.FontWeight.w700)}),
-				}}),
-			})})})}),
-	}})
+	return GameUi.wrap({
+		w.Text({data = props.heading, style = style(28, GameUi.TEXT, ui.FontWeight.w700, -0.5, true)}),
+		w.SizedBox({height = 10}),
+		w.Text({data = props.summary, style = style(13, GameUi.SOFT)}),
+		w.SizedBox({height = 18}),
+		w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = rows}),
+		w.SizedBox({height = 6}),
+		w.Text({data = props.footer, textAlign = ui.TextAlign.center, style = style(12, GameUi.MUTED, ui.FontWeight.w700)}),
+	})
 end
 
 return table.freeze(GameUi)

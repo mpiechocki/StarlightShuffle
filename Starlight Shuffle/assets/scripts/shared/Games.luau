@@ -24,6 +24,9 @@ local list: {Game} = {
 		scene = "scene:lucky_shot", duration = 45, intro = 10 },
 	{ id = "star_pass", title = "Star Pass", blurb = "Charge your star and pass it on before it bursts!",
 		scene = "scene:star_pass", duration = 300, intro = 10, minPlayers = 2 },
+	-- Reveal, countdown and 120 s of play (it ends itself sooner with one room).
+	{ id = "pillow_fight", title = "Pillow Fight", blurb = "Aim, hold and throw. Red ! means dodge.",
+		scene = "scene:pillow_fight", duration = 127, intro = 15 },
 	{ id = "minigame_1", title = "Mini-game 1", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_1", duration = 30 },
 	{ id = "minigame_2", title = "Mini-game 2", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_2", duration = 30 },
 	{ id = "minigame_3", title = "Mini-game 3", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_3", duration = 30 },

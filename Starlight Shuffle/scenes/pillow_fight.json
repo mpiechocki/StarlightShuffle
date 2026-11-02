@@ -1,0 +1,362 @@
+{
+  "version": 2,
+  "name": "pillow_fight",
+  "activeCamera": "camera-main",
+  "environment": {
+    "background": 12824275,
+    "fogNear": 30.0,
+    "fogFar": 70.0,
+    "envDiv": 2.0,
+    "renderingPreset": {
+      "library": "moonbase.standard",
+      "revision": "1",
+      "preset": "pixel"
+    },
+    "effects": {}
+  },
+  "settings": {
+    "aoCell": 0.3,
+    "lightmapDensity": 10.0,
+    "bakeSamples": 128,
+    "bakeBounces": 2,
+    "probeSpacing": 1.0,
+    "navCell": 0.1,
+    "navCellHeight": 0.05,
+    "navAgentRadius": 0.3,
+    "navAgentHeight": 1.8,
+    "navMaxClimb": 0.4,
+    "navMaxSlope": 45.0
+  },
+  "entities": [
+    {
+      "id": "camera-main",
+      "name": "Main camera",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          8.0,
+          12.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "Camera",
+          "id": "0b5fa20d43444bd2b230686ea6f13d99",
+          "projection": "perspective",
+          "orthoHeight": 10.0,
+          "fov": 45.0,
+          "near": 0.05,
+          "far": 200.0,
+          "zoom": 1.0,
+          "fadeNear": 0.25,
+          "fadeFar": 1.6,
+          "fadeSpeed": 14.0,
+          "fadeMaxSize": 2.5
+        }
+      ]
+    },
+    {
+      "id": "ambient",
+      "name": "Ambient light",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "Light",
+          "id": "06fb7f145aa04b5f8348146bd9982d2f",
+          "kind": "hemisphere",
+          "mode": "realtime",
+          "color": 16312560,
+          "intensity": 1.6,
+          "groundColor": 15190998,
+          "target": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "distance": 20.0,
+          "decay": 1.5,
+          "angle": 0.6,
+          "penumbra": 0.6,
+          "castShadow": false,
+          "shadowMapSize": 1024,
+          "shadowBias": 0.0,
+          "normalBias": 0.03
+        }
+      ]
+    },
+    {
+      "id": "player-spawn",
+      "name": "Player spawn (behind the camera)",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          20.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": []
+    },
+    {
+      "id": "walk-area",
+      "name": "Walk area",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          20.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "LuaScript",
+          "id": "walk-area",
+          "script": "asset:5ccaadf2-4544-4b3f-a958-25f33d846ec8",
+          "enabled": true,
+          "properties": [
+            {
+              "name": "width",
+              "type": {
+                "kind": "number",
+                "optional": false,
+                "list": false
+              },
+              "value": 2.0
+            },
+            {
+              "name": "depth",
+              "type": {
+                "kind": "number",
+                "optional": false,
+                "list": false
+              },
+              "value": 2.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "floor",
+      "name": "Floor",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          -0.2,
+          20.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "MeshRenderer",
+          "id": "3e634f4005b54cc6affb36548c3931cb",
+          "materials": {},
+          "source": "box",
+          "model": "",
+          "hide": "",
+          "overlay": "",
+          "overlayMetres": 1.0,
+          "size": [
+            4.0,
+            0.4,
+            4.0
+          ],
+          "castShadow": true,
+          "receiveShadow": true,
+          "static": false,
+          "lightmapScale": 1.0,
+          "fades": true
+        },
+        {
+          "type": "Material",
+          "id": "b7c71cb2aabf4e58b159df6f5550ed8c",
+          "assignment": {
+            "shader": {
+              "library": "moonbase.standard",
+              "revision": "1",
+              "shader": "lit"
+            },
+            "overrides": {
+              "color": {
+                "type": "color",
+                "value": 15850466
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "bedroom-assets",
+      "name": "Bedroom art and audio",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "LuaScript",
+          "id": "assets",
+          "script": "asset:b1437e76-d674-4c4e-99be-12860bad96f2",
+          "enabled": true,
+          "properties": [
+            {
+              "name": "bedroom",
+              "type": {
+                "kind": "texture",
+                "binding": "package:moonbase_engine/src/scripting/texture.dart#Texture",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:a95ade6b-2736-41e7-bc1b-d2db205ed738"
+            },
+            {
+              "name": "dolls",
+              "type": {
+                "kind": "texture",
+                "binding": "package:moonbase_engine/src/scripting/texture.dart#Texture",
+                "optional": false,
+                "list": true
+              },
+              "value": [
+                "asset:deb53629-577b-4c64-a8db-7df229f5f367",
+                "asset:25598db0-4355-4239-abb6-9ba6e6792bd7",
+                "asset:7e055a90-95f4-4fe3-acc8-9e6825022d25"
+              ]
+            },
+            {
+              "name": "lullaby",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:7e1bf362-aa49-47da-a5d8-496414e3be29"
+            },
+            {
+              "name": "throw",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:052f11d2-5fda-46b4-bef8-f8a35ad5a9c6"
+            },
+            {
+              "name": "warning",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:37cb9bc5-7872-4abb-a8f9-c331a1ec0ba7"
+            },
+            {
+              "name": "hit",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:1aa50c20-1fae-4c89-aac1-905784057e33"
+            },
+            {
+              "name": "dodge",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:eb13c9cb-b279-442d-9a56-a26d24a71b45"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
