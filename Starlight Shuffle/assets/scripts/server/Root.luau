@@ -11,9 +11,11 @@
 -- Arrivals hear HELLO (who they are, which place) and their Starlights total.
 -- A place with nobody in it stops itself after a grace (server/Travel).
 -- Admins (server/Admins) hear and set the mini-game lineup in either place
--- (server/Lineup).
+-- (server/Lineup). Only the lobby has chat (server/Chat), moderated through
+-- the platform (@moonbase/social).
 local server = require("@moonbase/server")
 local scenes = require("@moonbase/scene")
+local Social = require("@moonbase/social")
 local types = require("@moonbase/types")
 local Net = require("../shared/Net")
 local Arena = require("./Arena")
@@ -24,6 +26,7 @@ local Cycle = require("./Cycle")
 local Travel = require("./Travel")
 local Admins = require("./Admins")
 local Lineup = require("./Lineup")
+local Chat = require("./Chat")
 
 -- What runs this place: server/Lobby or server/Cycle.
 type Mode = {
@@ -40,6 +43,7 @@ local avatar: scenes.Prefab
 local cancels: {() -> ()} = {}
 local arena: Arena.Arena? = nil
 local cycle: Cycle.Cycle? = nil
+local chat: Chat.Chat? = nil
 
 return server.defineScript({
 	onStart = function()
@@ -71,7 +75,13 @@ return server.defineScript({
 			mode = running
 		else
 			mode = Lobby.new({ arena = world, starlights = starlights })
+			chat = Chat.new({
+				send = function(to: {types.Player}, ...: types.Value) server.notifyPlayers(to, ...) end,
+				clock = server.clock, after = server.after, platform = Social.new(),
+				room = function() return { id = server.context.instance_id, name = "Lobby" } end,
+			})
 		end
+		local talk = chat
 		local idle = Travel.idleStop(EMPTY_GRACE[place], function(): boolean return people.count() == 0 end)
 		idle()
 
@@ -82,22 +92,26 @@ return server.defineScript({
 				if count and player.isActive then total(player, count) end
 			end)
 			mode.added(player)
+			if talk then talk.added(player) end
 			lineup.added(player)
 			idle()
 		end))
 		table.insert(cancels, server.onPlayerRemoved(function(player: server.Player, _reason: string)
 			mode.removed(player)
+			if talk then talk.removed(player) end
 			lineup.removed(player)
 			people.removed(player)
 			idle()
 		end))
-		table.insert(cancels, server.onPlayerMetadataChanged(function(player: server.Player, _previous: unknown, _changed: {string})
+		table.insert(cancels, server.onPlayerMetadataChanged(function(player: server.Player, _previous: unknown, changed: {string})
 			people.metadataChanged(player)
+			if talk then talk.metadataChanged(player, changed) end
 		end))
 		table.insert(cancels, server.onMessage(function(player: server.Player, kind: unknown, ...: unknown)
 			if not player.isActive then return end
 			local a = ...
-			if people.receive(player, kind, a) or world.receive(player, kind, a) or lineup.receive(player, kind, ...) then return end
+			if people.receive(player, kind, a) or world.receive(player, kind, a) or lineup.receive(player, kind, ...)
+				or (talk and talk.receive(player, kind, a)) then return end
 			mode.receive(player, kind, ...)
 		end))
 	end,
@@ -109,6 +123,7 @@ return server.defineScript({
 		for _, cancel in cancels do cancel() end
 		table.clear(cancels)
 		if cycle then cycle.dispose(); cycle = nil end
+		if chat then chat.dispose(); chat = nil end
 		if arena then arena.dispose(); arena = nil end
 	end,
 })

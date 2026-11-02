@@ -14,6 +14,18 @@
 --   client -> server: START  (the Start Cycle button)  |  LEADERBOARD
 --   server -> client: MOVING  |  FAILED, reason  |  LEADERBOARD, board
 --
+-- Lobby chat (server/Chat), as in Sky Lounge:
+--   client -> server: SAY, text  |  TYPING, typing
+--   server -> client: CHAT, experience?  (when you arrive: where reports go)
+--                     SAY, sessionId, name, text, roles, messageId?
+--                     TYPING, sessionId, typing
+-- SAY goes to everyone the speaker may talk to, the sender included, with the
+-- speaker's roles (Net.roles); nothing said is kept, so a joiner's chat starts
+-- empty. TYPING reports when a player starts or stops writing; a SAY also ends
+-- it. Where the platform moderates chat it keeps every message, and players
+-- report one by its `messageId` within CHAT's `experience`; only other
+-- players' copies carry it.
+--
 -- Cycle (server/Cycle): mini-games one after another, in a loop.
 --   client -> server: PAUSE, paused  (the HUD's Pause/Play button)
 --                     GAME, ...  (the current mini-game's own messages)
@@ -47,11 +59,19 @@ Net.RESULTS = "results"
 Net.GAME = "game"
 Net.ADMIN = "admin"
 Net.LINEUP = "lineup"
+Net.CHAT = "chat"
+Net.SAY = "say"
+Net.TYPING = "typing"
 
 Net.MAX_OUTFIT = 200 -- variation ids per outfit
 Net.MAX_NAME = 64 -- bytes of a name in leaderboard and results messages
 Net.MAX_BOARD = 20 -- rows the leaderboard lists
 Net.MAX_RESULTS = 64 -- rows a round's results list
+Net.MAX_CHARS = 240 -- characters per chat message
+Net.CHAT_COOLDOWN = 0.7 -- seconds between one player's messages
+Net.CHAT_KEEP = 50 -- messages a client's chat history keeps
+Net.MAX_ROLES = 8 -- roles one player shows
+Net.MAX_ROLE = 32 -- bytes of a role's name
 
 local MAX_ID = 9007199254740991
 
@@ -257,6 +277,61 @@ end
 -- A Starlights total; nil for anything else.
 function Net.starlights(v: unknown): number?
 	return integer(v, 0, MAX_ID)
+end
+
+-- A chat message on one line, trimmed; nil when empty, too long or not UTF-8.
+function Net.text(v: unknown): string?
+	if type(v) ~= "string" or #v > Net.MAX_CHARS * 4 then return nil end
+	local text = string.match((string.gsub(v, "[%c%s]+", " ")), "^ ?(.-) ?$") or ""
+	local length = utf8.len(text)
+	if text == "" or not length or length > Net.MAX_CHARS then return nil end
+	return text
+end
+
+-- An experience id as the platform makes them: eight letters, digits, `_` and
+-- `-`, starting with a letter or digit; nil for anything else.
+function Net.experience(v: unknown): string?
+	if type(v) ~= "string" or #v ~= 8 or not string.match(v, "^%w[%w_%-]*$") then return nil end
+	return v
+end
+
+-- A chat message's id as the platform keeps it: up to 64 letters, digits, `_`
+-- and `-`; nil for anything else.
+Net.MAX_MESSAGE_ID = 64
+function Net.messageId(v: unknown): string?
+	if type(v) ~= "string" or #v == 0 or #v > Net.MAX_MESSAGE_ID or not string.match(v, "^[%w_%-]+$") then return nil end
+	return v
+end
+
+-- A platform role's name ("Creator I", "Moon II"): letters, digits and
+-- single spaces; nil for anything else.
+function Net.role(v: unknown): string?
+	if type(v) ~= "string" or #v == 0 or #v > Net.MAX_ROLE then return nil end
+	if not string.match(v, "^%w[%w ]*$") or string.find(v, "  ", 1, true) or string.sub(v, -1) == " " then return nil end
+	return v
+end
+
+-- A player's roles as the platform shows them (`display_roles` in their host
+-- metadata), most important first: the first colours their name in chat, and
+-- each with an icon shows it (client/Roles). A fresh list of the valid names,
+-- at most MAX_ROLES; anything else is none.
+function Net.roles(v: unknown): {string}
+	local out: {string} = {}
+	if type(v) ~= "table" then return out end
+	local items = v :: {[unknown]: unknown}
+	for i = 1, #items do
+		local name = Net.role(items[i])
+		if name and not table.find(out, name) then table.insert(out, name) end
+		if #out == Net.MAX_ROLES then break end
+	end
+	return out
+end
+
+-- Roles as a message payload: an array even when there are none.
+function Net.roleList(roles: {string}): {types.Value}
+	local values: {types.Value} = {}
+	for i, name in roles do values[i] = name end
+	return value.array(values)
 end
 
 -- An avatar thumbnail's media id, the platform's `avatar_id` (shown from

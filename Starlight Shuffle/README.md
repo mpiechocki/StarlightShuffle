@@ -48,6 +48,24 @@ mini-game, its phase and time left, and the **Pause/Play** button: pressing Paus
 marks you to leave, and when the current mini-game's results end you go back to the
 lobby you came from (or any lobby with room). Pressing Play before then keeps you in.
 
+**Lobby chat.** The lobby has a chat like Sky Lounge's, ported from it; the
+mini-game cycle has none (the chat's widgets unmount when you leave the lobby, and
+the cycle's server ignores chat). The chat bar along the bottom (`widgets/ChatBar`)
+sends messages with the app's custom emoji (`:name:` codes, `widgets/EmojiPicker`),
+and its bubble button opens the recent history; the latest lines also show along the
+top left under the head (`widgets/ChatFeed`). Speech bubbles and typing dots float over
+avatars, with name tags under them that stay faint until you walk up
+(`widgets/PlayerLabels`, projected each frame by `client/Chat`). The chat rules show
+the first time a player goes to chat on a device (`widgets/ChatRules`, kept as
+`chat.rules` in the device preferences), and pressing and holding someone else's
+message offers to report it in the app (`widgets/MessageMenu`). On the server
+(`server/Chat`), messages reach others once the platform's moderation allows them
+(`@moonbase/social`), in the order each player said them; a muted player is heard
+only by themselves; a pair with a block either way never hears each other (they still
+see each other's avatars, unlike Sky Lounge, where blocked players are hidden).
+Nothing said is kept. Every platform call fails open, so local Play delivers chat
+unmoderated. Tests: `tests/chat_test.luau`.
+
 **Idle stop.** The host never stops idle instances, so a place stops itself once it
 has been empty for 30 s (cycle) or 300 s (lobby).
 
@@ -417,17 +435,21 @@ used instead. `tests/floor_test.luau` checks the rectangle and its blocks.
 - `assets/scripts/client/`: `Multiplayer` (the replicated world and every avatar in it),
   `Place` (which place you are in, the cycle's round, your Starlights, the leaderboard,
   moves between places, and routing to the current mini-game's client module),
-  `Appearance` and `Roster`.
+  `Appearance`, `Roster` and the lobby chat's `Chat` (with `Emojis`, `Roles`,
+  `AvatarImages` and its English `ChatText`).
 - `assets/scripts/widgets/`: `Hud` (with `Leaderboard`, `WallLabels` over the lobby's
-  buttons, and the shared `Style`) and `WalkControls`.
+  buttons, and the shared `Style`), `WalkControls`, and the lobby chat: `LobbyChat`
+  (which shows it only in the lobby), `ChatBar`, `ChatFeed`, `ChatLine`, `ChatRules`,
+  `MessageMenu`, `PlayerLabels`, the emoji widgets and their `ChatStyle`, all from
+  Sky Lounge.
 - `assets/scripts/gameplay/`: movement, the follow camera and `WalkArea`, ported from
   Sky Lounge.
-- `assets/scripts/server/`: `Root`, `Lobby`, `Cycle`, `Arena` (the scene and avatars;
+- `assets/scripts/server/`: `Root`, `Lobby`, `Chat` (the lobby's chat), `Cycle`, `Arena` (the scene and avatars;
   it swaps scenes between mini-games on one replication stream), `People` (who is here
   and how they look), `Starlights`, `Travel` (finding, starting and moving between
   places) and the mini-game registry `Games`.
 - `assets/scripts/shared/`: `Net` (the wire protocol and its validators), `Games` (the
-  mini-game list) and `Floor`.
+  mini-game list), `Floor` and `EmojiCodes`.
 - `assets/prefabs/Avatar.prefab`: every player's avatar, with its movement settings.
 
 Project settings and Save are in the **Moonbase** menu. **Hosting** links a

@@ -7,7 +7,8 @@
 -- and drives the HUD (widgets/Hud): in the lobby, tapping the arcade (its
 -- doorway, the room behind it or a cabinet) starts the mini-game cycle and the
 -- leaderboard board on the wall opens the leaderboard; in the cycle, the HUD's head shows the mini-game and its
--- Pause/Play button. Moving between places keeps this VM: everything that
+-- Pause/Play button. The lobby has a chat as in Sky Lounge (client/Chat,
+-- widgets/LobbyChat). Moving between places keeps this VM: everything that
 -- belonged to the previous server instance resets. The app's loading screen
 -- stays up until we stand dressed in the first scene.
 local engine = require("@moonbase/engine")
@@ -21,9 +22,11 @@ local Avatars = require("./gameplay/Avatars")
 local Multiplayer = require("./client/Multiplayer")
 local Appearance = require("./client/Appearance")
 local Place = require("./client/Place")
+local Chat = require("./client/Chat")
 local WalkControls = require("./widgets/WalkControls")
 local Hud = require("./widgets/Hud")
 local WallLabels = require("./widgets/WallLabels")
+local LobbyChat = require("./widgets/LobbyChat")
 
 --@property
 local title: string = "Starlight Shuffle"
@@ -36,6 +39,7 @@ local function opensBoard(id: string): boolean return string.sub(id, 1, 12) == "
 local controls: Controls.Controller? = nil
 local multiplayer: Multiplayer.Controller? = nil
 local place: Place.Controller? = nil
+local chat: Chat.Controller? = nil
 local labels: WallLabels.Labels? = nil
 -- Lifts the app's loading screen (game.holdLoadingScreen).
 local releaseLoading = function() end
@@ -68,6 +72,8 @@ return engine.defineScript({
 		-- Our own thumbnail comes from the session until our identity carries one.
 		local others = Multiplayer.new(walker, wornOutfit(), Net.avatarId(session.user.avatar_id))
 		multiplayer = others
+		local talk = Chat.new(walker, others)
+		chat = talk
 		releaseLoading = game.holdLoadingScreen()
 		others.onScene = function(scene: engine.Scene?)
 			walker:attachScene(scene)
@@ -78,10 +84,22 @@ return engine.defineScript({
 		others.onArrive = function(avatar: Multiplayer.Avatar)
 			if avatar.mine then walker:glideIn() end
 		end
-		-- Another server instance: its own world, round and leaderboard.
+		others.onLeft = function(id: number) talk:left(id) end
+		-- Another server instance: its own world, round, leaderboard and chat.
 		here.onTransferred = function()
 			others:transferred()
+			talk:reset()
 			walker:attachScene(walker.scene)
+		end
+		-- A tap on the game while typing only ends the typing; the joystick
+		-- strip stays above the chat bar.
+		walker.captureTap = function(): boolean
+			local dismiss = talk.dismissInput
+			return dismiss ~= nil and dismiss()
+		end
+		walker.covered = function(): number
+			local covered = talk.covered
+			return if covered then covered() else 0
 		end
 		walker.onTap = function(x: number, y: number): boolean
 			if here.place == "cycle" then return here:tap(x, y) end
@@ -94,7 +112,9 @@ return engine.defineScript({
 		runtime.runView(w.Stack({fit = w.StackFit.expand, children = {
 			WalkControls(walker),
 			WallLabels.View({labels = tags}),
+			LobbyChat({place = here, chat = talk, layer = "under"}),
 			Hud({place = here}),
+			LobbyChat({place = here, chat = talk, layer = "over"}),
 		}}))
 	end,
 	onUpdate = function(dt: number)
@@ -102,6 +122,7 @@ return engine.defineScript({
 		if controls then controls:update(dt) end
 		if multiplayer then multiplayer:update(dt) end
 		if place then place:update(dt) end
+		if chat then chat:update(dt) end
 		if controls and place then controls.fixedCamera = place:fixedCamera() end
 		if labels and controls and place then
 			labels:update(if place.place == "lobby" then controls.scene else nil)
@@ -109,6 +130,7 @@ return engine.defineScript({
 	end,
 	onDestroy = function()
 		releaseLoading()
+		if chat then chat:dispose(); chat = nil end
 		if place then place:dispose(); place = nil end
 		if multiplayer then multiplayer:dispose(); multiplayer = nil end
 		if controls then controls:dispose(); controls = nil end

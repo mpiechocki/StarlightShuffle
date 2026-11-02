@@ -4,7 +4,7 @@
 --
 -- Everywhere: your lifetime Starlights (top left), and a notice while a move
 -- between places is under way or failed.
--- Lobby: a hint pointing at the Start Cycle button, and the leaderboard panel
+-- Lobby: the leaderboard panel
 -- (widgets/Leaderboard) when it is open.
 -- Cycle: the head of the HUD shows the mini-game, its phase and time left, and
 -- the Pause/Play button: paused, you go back to the lobby when this mini-game
@@ -22,6 +22,10 @@ local Place = require("../client/Place")
 local Style = require("./Style")
 local Leaderboard = require("./Leaderboard")
 local Lineup = require("./Lineup")
+
+-- How far up the lobby's bottom notices sit: clear of the chat bar (its 12
+-- margin and 50 tall card) with a gap.
+local CHAT_BAR = 12 + 50 + 12
 
 type Props = { read place: Place.Controller }
 type Fields = { unlisten: (() -> ())? }
@@ -116,15 +120,6 @@ local function notice(place: Place.Controller): w.Widget?
 		p.EdgeInsets.symmetric({horizontal = 18, vertical = 12}), 16)
 end
 
-local function lobbyHint(place: Place.Controller): w.Widget?
-	if place.moving or place.boardOpen then return nil end
-	return Style.card(w.Row({mainAxisSize = w.MainAxisSize.min, children = {
-		w.Icon({icon = material.star_rounded, size = 18, color = Style.GOLD}),
-		w.SizedBox({width = 8}),
-		w.Flexible({child = Style.text("Tap the arcade to start the mini-games", Style.style(14, Style.WHITE, ui.FontWeight.w600), 2)}),
-	}}), p.EdgeInsets.symmetric({horizontal = 16, vertical = 10}), 999)
-end
-
 -- The admins' lineup button: in the lobby's head, before the leaderboard.
 local function adminButton(place: Place.Controller, head: {w.Widget})
 	if not place.lineup then return end
@@ -183,10 +178,13 @@ local function build(place: Place.Controller): w.Widget
 	if center then
 		table.insert(layers, w.IgnorePointer({child = w.Center({child = w.Padding({padding = p.EdgeInsets.all(24), child = center})})}))
 	end
-	local bottom = notice(place) or (if place.place == "lobby" then lobbyHint(place) else nil)
+	-- (The lobby's hint pointing at the arcade is widgets/LobbyChat's, under the chat.)
+	local bottom = notice(place)
 	if bottom then
+		-- In the lobby, above the chat bar (widgets/LobbyChat).
+		local lift = if place.place == "lobby" then CHAT_BAR else 28
 		table.insert(layers, w.IgnorePointer({child = w.SafeArea({child = w.Align({alignment = p.Alignment.bottomCenter,
-			child = w.Padding({padding = p.EdgeInsets.fromLTRB(16, 0, 16, 28), child = bottom})})})}))
+			child = w.Padding({padding = p.EdgeInsets.fromLTRB(16, 0, 16, lift), child = bottom})})})}))
 	end
 	if place.place == "lobby" and place.boardOpen then
 		table.insert(layers, Leaderboard({place = place}))
