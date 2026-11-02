@@ -30,8 +30,9 @@ type Fields = {
 	paused: boolean,
 	results: Net.Results?,
 	board: Net.Board?, boardOpen: boolean,
-	-- Lobby: how many here are checked in for the next mini-game, and whether we are.
-	readyCount: number, ready: boolean,
+	-- Lobby: how many here are checked in for the next mini-game, and whether we are;
+	-- whether a cycle is running (check-ins join its next mini-game) and the one it has on.
+	readyCount: number, ready: boolean, cycleRunning: boolean, cycleGame: string?,
 	-- Admins only (ADMIN): which mini-games cycles play, and its panel.
 	lineup: Net.Lineup?, lineupOpen: boolean,
 	moving: boolean, failed: Net.Reason?, failedAt: number,
@@ -90,7 +91,7 @@ local function reset(self: Controller)
 	closeMinigame(self)
 	self.place, self.round, self.results, self.board = nil, nil, nil, nil
 	self.boardOpen, self.paused, self.moving, self.failed = false, false, false, nil
-	self.readyCount, self.ready = 0, false
+	self.readyCount, self.ready, self.cycleRunning, self.cycleGame = 0, false, false, nil
 	self.lineup, self.lineupOpen = nil, false
 	self.endsAt, self.shownSeconds = 0, -1
 end
@@ -98,7 +99,7 @@ end
 function Place.new(): Controller
 	local self = setmetatable({
 		place = nil, session = nil, starlights = nil, round = nil, endsAt = 0, paused = false, results = nil,
-		board = nil, boardOpen = false, readyCount = 0, ready = false, lineup = nil, lineupOpen = false, moving = false, failed = nil, failedAt = 0,
+		board = nil, boardOpen = false, readyCount = 0, ready = false, cycleRunning = false, cycleGame = nil, lineup = nil, lineupOpen = false, moving = false, failed = nil, failedAt = 0,
 		connection = "offline", minigame = nil, minigameId = nil, minigameRound = 0, scene = nil, listeners = {},
 		onTransferred = nil, unsubscribe = nil, unwatch = nil, shownSeconds = -1,
 	} :: Fields, Place)
@@ -119,9 +120,11 @@ function Place.new(): Controller
 			else openMinigame(self, round.game, round.round) end
 			changed(self)
 		elseif kind == Net.READY then
-			local count, mine = Net.id(a) or 0, select(1, ...)
+			local count, mine, on = Net.id(a) or 0, select(1, ...), select(2, ...)
 			if type(a) == "number" and type(mine) == "boolean" then
 				self.readyCount, self.ready = math.max(0, count), mine
+				self.cycleRunning = type(on) == "string"
+				self.cycleGame = if type(on) == "string" and Games.get(on) then on else nil
 				changed(self)
 			end
 		elseif kind == Net.PAUSED then

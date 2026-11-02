@@ -63,6 +63,59 @@ function Travel.send(players: {server.Player}, profile: string, data: Data?, pre
 	return false, code
 end
 
+-- A running cycle as its metadata describes it (Travel.publish): its phase, the
+-- mini-game on or coming, how many are in it, and when its phase ends
+-- (seconds since 1970: os.time, which every instance shares).
+export type Cycle = { id: string, phase: string, game: string?, players: number, ends: number, room: number }
+
+-- The cycles running now (yields).
+function Travel.cycles(): {Cycle}
+	local out: {Cycle} = {}
+	for _, info in list() do
+		local m: {[string]: string} = info.metadata or {}
+		local players, ends, phase, game = tonumber(m.players), tonumber(m.ends), m.phase, m.game
+		if info.profile_id == "cycle" and info.state == "ready" and type(phase) == "string" and players and ends then
+			table.insert(out, { id = info.instance_id, phase = phase, game = if type(game) == "string" and game ~= "" then game else nil,
+				players = players, ends = ends, room = info.max_connections - info.connections })
+		end
+	end
+	return out
+end
+
+-- Tells other places what this one is doing ([metadata], strings), for
+-- Travel.cycles; a newer call wins over one still on its way.
+local published = 0
+function Travel.publish(metadata: {[string]: string})
+	published += 1
+	local mine = published
+	local id = server.context.instance_id
+	local function try(attempt: number)
+		server.instances.get({instance_id = id}, function(result: server.HostResult<server.InstanceInfo>)
+			if mine ~= published then return end
+			if not result.ok then print("Publishing place state failed: " .. result.error.message); return end
+			server.instances.setMetadata({instance_id = id, revision = result.value.revision, metadata = metadata},
+				function(set: server.HostResult<boolean>)
+					-- Someone else changed it meanwhile (a revision conflict): read it again.
+					if not set.ok and attempt < 3 and mine == published then try(attempt + 1) end
+				end)
+		end)
+	end
+	try(1)
+end
+
+-- Transfers [players] to the place [destination] exactly, carrying [data]
+-- (yields). Returns whether they are on their way, and the error code if not.
+function Travel.sendTo(players: {server.Player}, destination: string, data: Data?): (boolean, string?)
+	local active: {server.Player} = {}
+	for _, player in players do
+		if player.isActive then table.insert(active, player) end
+	end
+	if #active == 0 then return true, nil end
+	local ok, err = pcall(function() hosting.transferAndWait(active, destination, hosting.operationId(), data) end)
+	if ok then return true, nil end
+	return false, Task.failure(err).code
+end
+
 -- Stops this place once [empty]() has held for [grace] seconds; call [check]
 -- whenever someone joins or leaves. The host never stops idle instances.
 function Travel.idleStop(grace: number, empty: () -> boolean): () -> ()

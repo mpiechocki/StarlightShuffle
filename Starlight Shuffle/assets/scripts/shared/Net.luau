@@ -13,11 +13,14 @@
 -- Lobby (server/Lobby):
 --   client -> server: START, joining  (tapping the arcade: checking in for the
 --                     next mini-game, or out again)  |  LEADERBOARD
---   server -> client: READY, count, mine  (how many here are checked in, and
---                     whether you are; on arrival and on every change)
+--   server -> client: READY, count, mine, on  (how many here are checked in,
+--                     whether you are, and the mini-game a running cycle has on,
+--                     "" between them, or false when none is running; on
+--                     arrival and on every change)
 --                     MOVING  |  FAILED, reason  |  LEADERBOARD, board
 -- Checked-in players stay in the lobby until Games.MIN_PLAYERS of them are,
--- then go to a cycle together.
+-- then go to a cycle together; while a cycle is running, any number join its
+-- next mini-game, sent during its break.
 --
 -- Lobby shop (server/Accounts, shared/Shop; tapping the shop stall opens it):
 --   client -> server: SHOP  (opened: read my account again)

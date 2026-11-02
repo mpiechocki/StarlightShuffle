@@ -17,14 +17,16 @@
 --
 -- No mini-game starts with fewer than Games.MIN_PLAYERS here. Lobbies send
 -- players only that many at a time (server/Lobby: they check in there), so a
--- new cycle gathers its arrivals for a few seconds (showing the coming
--- mini-game's scene) and starts. When too few are here to start one (a group
--- that never all arrived, a break or an intro that ends short of them),
+-- new cycle goes straight from the lobby into the mini-game: the first arrival
+-- starts its intro (at least ARRIVING seconds), and the rest of the group lands
+-- during it. The mini-game itself is set up once the whole group is here (or
+-- when only its own intro is left), so nobody in it counts as a latecomer. When too few are here to start one (a group that never all
+-- arrived, a break or an intro that ends short of them),
 -- everyone goes back to the lobby, still checked in; a mini-game already
 -- playing plays on. With nobody here server/Root stops the cycle after a grace.
 --
 -- Only the mini-games in the admins' lineup (server/Lineup) are played; the
--- cycle reads it again while gathering and during each results, and tells
+-- cycle reads it again as a group arrives and during each results, and tells
 -- the admins here whenever it moves on.
 local server = require("@moonbase/server")
 local types = require("@moonbase/types")
@@ -40,13 +42,10 @@ local Modules = require("./Games")
 
 local RESULTS = 7 -- seconds the results show
 local LOBBY = "scene:lobby"
--- Seconds a waiting cycle gathers once enough players are here before
--- announcing a mini-game, so a group sent together (who land one by one) all
--- take part.
-local GATHER = 3
--- Seconds a cycle waits for a group to arrive in full before sending back
--- those who did.
-local ARRIVAL = 12
+-- The shortest intro a group's first mini-game gets, in seconds: they are sent
+-- together but land one by one, and all of them should take part.
+local ARRIVING = 8
+local RETRY = 5 -- seconds before a failed trip back to the lobby is tried again
 local MAX_AWARD = 1000 -- Starlights one award may add
 
 export type Host = {
@@ -104,10 +103,10 @@ function Cycle.new(host: Host): Cycle
 	-- Who did something in this mini-game during its play (sent it a message):
 	-- only they earn its completion reward (shared/Rewards).
 	local acted: {[number]: boolean} = {}
-	local loaded: string? = nil -- a scene loaded ahead of its intro, while gathering
-	local waitingSince = 0 -- server clock of a waiting cycle's first arrival
 	-- The mini-game a break announced, and its index in Games.list: its intro plays it.
 	local upcoming: Games.Game?, upcomingIndex = nil, 0
+	-- A mini-game announced but not yet set up: its group is still landing.
+	local setup: Games.Game? = nil
 
 	local function present(): {server.Player}
 		local out: {server.Player} = {}
@@ -131,8 +130,13 @@ function Cycle.new(host: Host): Cycle
 			remaining = if phase == "waiting" and endsAt == 0 then 0 else endsAt - server.clock(), players = #present() })
 	end
 
+	-- Everyone here hears the round; lobbies see it in this place's metadata
+	-- (Travel.cycles), so their players can join the next mini-game.
 	local function broadcast()
 		server.notifyPlayers(nil, Net.ROUND, roundValue())
+		local left = if phase == "waiting" and endsAt == 0 then 0 else math.max(0, endsAt - server.clock())
+		Travel.publish({ phase = phase, game = if game then game.id else "", players = tostring(#present()),
+			ends = tostring(math.floor(os.time() + left)) })
 	end
 
 
@@ -146,6 +150,7 @@ function Cycle.new(host: Host): Cycle
 	end
 
 	local finishPlay: () -> ()
+	local disband: () -> ()
 
 	local function context(current: Games.Game): Minigame.Context
 		return {
@@ -180,36 +185,45 @@ function Cycle.new(host: Host): Cycle
 	end
 
 	-- The next mini-game: load its scene, announce it.
-	local function intro()
+	-- Sets up [current]'s server module, with everyone here taking part.
+	local function begin(current: Games.Game)
+		setup = nil
+		local module = Modules[current.id]
+		if module then
+			local ok, made = pcall(module.new, context(current))
+			if ok then running = made else print(current.id .. ".new failed: " .. tostring(made)) end
+		else
+			print("No server module for mini-game " .. current.id)
+		end
+	end
+
+	-- [arriving]: a group is landing, of at least Games.MIN_PLAYERS.
+	local function intro(arriving: boolean?)
 		-- The one the break announced, else the next mini-game this many
 		-- players can play (a mini-game may need more than are here: it is
 		-- skipped this time round).
-		local nextGame, nextIndex = Games.pick(index, host.lineup(), #present())
+		local players = if arriving then math.max(#present(), Games.MIN_PLAYERS) else #present()
+		local nextGame, nextIndex = Games.pick(index, host.lineup(), players)
 		local announced = upcoming
 		if announced then nextGame, nextIndex = announced, upcomingIndex end
 		upcoming, upcomingIndex = nil, 0
 		index, game, round = nextIndex, nextGame, round + 1
 		table.clear(earned)
 		table.clear(acted)
-		phase, endsAt = "intro", server.clock() + (nextGame.intro or Games.INTRO)
-		if loaded ~= nextGame.scene then host.arena.load(nextGame.scene) end
-		loaded = nil -- the next intro loads afresh: this mini-game will have changed it
-		running = nil
+		local length = nextGame.intro or Games.INTRO
+		phase, endsAt = "intro", server.clock() + (if arriving then math.max(length, ARRIVING) else length)
+		host.arena.load(nextGame.scene)
+		running, setup = nil, nil
 		-- Announced first, so clients have the mini-game's module ready for
 		-- whatever it sends as it starts.
 		broadcast()
 		host.moved()
-		local module = Modules[nextGame.id]
-		if module then
-			local ok, made = pcall(module.new, context(nextGame))
-			if ok then running = made else print(nextGame.id .. ".new failed: " .. tostring(made)) end
-		else
-			print("No server module for mini-game " .. nextGame.id)
-		end
+		if arriving and not enough() then setup = nextGame else begin(nextGame) end
 	end
 
 	local function play()
 		local current = assert(game)
+		if setup then begin(current) end
 		phase = "playing"
 		endsAt = server.clock() + current.duration
 		playEnds = endsAt
@@ -252,10 +266,10 @@ function Cycle.new(host: Host): Cycle
 						server.notifyPlayers({player}, Net.PAUSED, false)
 					end
 				end
-				-- A cycle left waiting with them gathers again, and tries again if still too few.
-				if phase == "waiting" and endsAt == 0 and anyone() then
-					waitingSince = server.clock()
-					endsAt = waitingSince + GATHER
+				-- A cycle left waiting with them plays on if enough are here, else tries again soon.
+				if phase == "waiting" and anyone() then
+					if enough() then intro()
+					else server.after(RETRY, function() if phase == "waiting" and anyone() then disband() end end) end
 				end
 			end, function(err: server.RpcError)
 				print("Back to the lobby failed: " .. err.message)
@@ -321,7 +335,6 @@ function Cycle.new(host: Host): Cycle
 		game = nextGame
 		phase, endsAt = "break", server.clock() + Games.BREAK
 		host.arena.load(LOBBY)
-		loaded = nil
 		broadcast()
 		host.moved()
 	end
@@ -329,7 +342,7 @@ function Cycle.new(host: Host): Cycle
 
 	local function wait()
 		call("dispose")
-		running, game = nil, nil
+		running, game, setup = nil, nil, nil
 		upcoming, upcomingIndex = nil, 0
 		phase, endsAt = "waiting", 0
 		broadcast()
@@ -337,7 +350,7 @@ function Cycle.new(host: Host): Cycle
 	end
 
 	-- Too few to start the next mini-game: everyone back to the lobby, checked in.
-	local function disband()
+	disband = function()
 		print("Fewer than " .. Games.MIN_PLAYERS .. " players: back to the lobby")
 		sendOff(true)
 		wait()
@@ -354,21 +367,17 @@ function Cycle.new(host: Host): Cycle
 			host.arena.join(player)
 			server.notifyPlayers({player}, Net.PAUSED, false)
 			if phase == "waiting" then
-				if endsAt == 0 then
-					-- Gather: show the coming mini-game's scene while the rest arrive.
-					waitingSince = server.clock()
-					endsAt = waitingSince + GATHER
-					host.refreshLineup()
-					local coming = Games.pick(index, host.lineup(), Games.MIN_PLAYERS)
-					host.arena.load(coming.scene)
-					loaded = coming.scene
-				end
-				server.notifyPlayers({player}, Net.ROUND, roundValue())
+				-- Straight into the mini-game: its intro starts, and the rest of the group lands during it.
+				host.refreshLineup()
+				intro(true)
 			elseif phase == "break" then
 				recount()
 			else
 				server.notifyPlayers({player}, Net.ROUND, roundValue())
-				if phase == "intro" or phase == "playing" then call("join", player) end
+				local waiting = setup
+				-- The group is all here: its mini-game is set up with everyone in it.
+				if waiting and enough() then begin(waiting)
+				elseif phase == "intro" or phase == "playing" then call("join", player) end
 			end
 		end,
 		removed = function(player: server.Player)
@@ -403,17 +412,11 @@ function Cycle.new(host: Host): Cycle
 		end,
 		update = function(dt: number)
 			local now = server.clock()
-			if phase == "waiting" then
-				if endsAt > 0 and now >= endsAt then
-					-- Enough have arrived; or keep waiting a little for the rest of the group.
-					if enough() then intro()
-					elseif not anyone() then endsAt = 0
-					elseif now - waitingSince < ARRIVAL then endsAt = now + 1
-					else endsAt = 0; disband() end
-				end
-				return
-			end
+			if phase == "waiting" then return end
 			if phase == "playing" then call("update", dt) end
+			-- A group still landing: its mini-game is set up in time for its own intro.
+			local waiting = setup
+			if phase == "intro" and waiting and endsAt - now <= (waiting.intro or Games.INTRO) then begin(waiting) end
 			if now < endsAt then return end
 			if phase == "intro" then
 				-- Too few left to start: back to the lobby to check in again.

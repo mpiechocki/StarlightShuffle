@@ -5,7 +5,8 @@
 -- and speech bubbles over avatars, the latest lines along the top left under
 -- the head, and the chat bar along the bottom, with the lobby's hint above it:
 -- tap the arcade to check in for the next mini-game, or once checked in, how
--- many of the Games.MIN_PLAYERS needed are); `over` is what goes above it
+-- many of the Games.MIN_PLAYERS needed are, or with a cycle running, that you
+-- join its next mini-game); `over` is what goes above it
 -- (a long-pressed message's menu, and the chat rules before a first message).
 -- Hiding them closes the keyboard, and the chat goes quiet (Chat.quiet): no
 -- bubbles or typing left over for the next break. During a mini-game only
@@ -38,6 +39,13 @@ end
 local function hintText(place: Place.Controller): string?
 	if place.place ~= "lobby" or place.moving or place.failed or place.boardOpen or not place:online() then return nil end
 	local count, need = place.readyCount, Games.MIN_PLAYERS
+	-- A cycle is running: no count to reach, you join its next mini-game.
+	if place.cycleRunning then
+		local on = Games.get(place.cycleGame)
+		local now = if on then " · " .. on.title .. " is on now" else ""
+		if place.ready then return "You're in! You'll join the next mini-game" .. now .. " · tap the arcade to leave" end
+		return "Tap the arcade to join the next mini-game" .. now
+	end
 	if place.ready then
 		local more = need - count
 		if more <= 0 then return "You're in! Starting…" end

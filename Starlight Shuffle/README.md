@@ -59,8 +59,20 @@ Once three are checked in, the lobby sends them all together to a cycle
 (`server/Lobby`). A cycle that is short of players before its next mini-game (after
 results, when someone left, or a break or an intro that ends short) sends everyone
 back to the lobby they came from, still checked in; a mini-game already playing
-plays on when someone leaves. A new cycle waits up to 12 s for its whole group to
-arrive before doing the same.
+plays on when someone leaves. There is no waiting room: the group goes from the
+lobby straight into the mini-game, whose intro starts as the first of them lands
+(at least 8 s, so the rest land during it); if the group is still short when it
+ends, they go back to the lobby the same way.
+
+**Joining a cycle already running.** Every cycle publishes its phase, mini-game,
+player count and when its phase ends in its instance metadata
+(`Travel.publish`), and lobbies look every 2 s (`Travel.cycles`). While a cycle
+with players and room is running, the 3-player count doesn't apply: the hint
+reads "Tap the arcade to join the next mini-game · Lucky Shot is on now", and
+whoever checks in ("You're in! You'll join the next mini-game") is sent during
+that cycle's next break (with at least 4 s of it left), so they land in the
+lobby scene with everyone and play the next mini-game from its start. If that
+transfer fails they stay checked in for the next break.
 
 **Timer.** Before and during every mini-game the middle of the HUD's head is the
 cycle's timer, the same for all of them: "Starts in" through the intro, then "Time
@@ -203,7 +215,7 @@ more players than are there is still skipped, unless only such games are ticked.
   go there by hand. It holds `22919001` (the editor account used for Play) for now.
   Nobody else sees the button, and the server ignores lineup changes from non-admins.
 - **Where it lives:** `server/Lineup.luau` keeps it in `@moonbase/storage`, so one
-  change reaches every lobby and cycle. A cycle reads it again while gathering and
+  change reaches every lobby and cycle. A cycle reads it again as a group arrives and
   during each results. Nothing stored means every mini-game. Like Starlights, local
   Play starts each run with it cleared.
 - **Code:** `server/Admins.luau`, `server/Lineup.luau`, `Games.pick` / `Games.included`
