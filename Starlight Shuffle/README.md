@@ -30,7 +30,11 @@ Tap targets are found by id prefix: `start-…` and `leaderboard-…` (`Root.lua
 (`assets/models/lobby/`; the kit's sources and notes in `art/lobby/`) exactly where
 the kit's assembled lobby has them: the shop, the sofa corner, the moon rug, the
 constellation walls, the leaderboard and the arcade doorway. The room behind the
-doorway is built from boxes. The sky is Sky Lounge's dome with a painted night sky
+doorway is built from boxes. The arcade entrance follows the renders: a cream arch
+with a gold edge, a plaque behind the ARCADE lettering and a round star rug inside
+(`tools/lobby_arcade.py`, laid over the kit doorway, whose own trim the scene
+hides), cabinets in pairs with glowing screens and hanging stars; the sign colours
+come from `tools/lobby_signs.py`. The sky is Sky Lounge's dome with a painted night sky
 (`tools/lobby_sky.py`), and `tools/lobby_cloud_base.py` makes the cloud it floats
 on. Lighting is baked (`scenes/lobby.lighting.bin`): a baked key and fill light plus
 stationary glows at every lamp, sconce and star. After moving anything static,

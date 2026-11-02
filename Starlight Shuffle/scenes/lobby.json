@@ -12,12 +12,17 @@
    "revision": "1",
    "preset": "pixel"
   },
-  "effects": {}
+  "effects": {
+   "ssao": {
+    "type": "scalar",
+    "value": 0.0
+   }
+  }
  },
  "settings": {
   "aoCell": 0.3,
-  "lightmapDensity": 10.0,
-  "bakeSamples": 128,
+  "lightmapDensity": 11.0,
+  "bakeSamples": 512,
   "bakeBounces": 2,
   "probeSpacing": 1.0,
   "navCell": 0.1,
@@ -1140,7 +1145,7 @@
      "materials": {},
      "source": "model",
      "model": "asset:cf401672-cd07-404a-9061-daa7777fff5f",
-     "hide": "",
+     "hide": "cream doorway trim,upper cream lintel,rounded inner corner",
      "overlay": "",
      "overlayMetres": 1.0,
      "size": [
@@ -1164,13 +1169,13 @@
    "tags": [],
    "transform": {
     "position": [
-     -1.1,
+     -1.38,
      0.0,
-     -6.3
+     -6.9
     ],
     "rotation": [
      0.0,
-     0.0,
+     0.35,
      0.0
     ],
     "scale": [
@@ -1210,13 +1215,13 @@
    "tags": [],
    "transform": {
     "position": [
-     -0.36,
+     -0.6,
      0.0,
-     -6.3
+     -7.05
     ],
     "rotation": [
      0.0,
-     0.0,
+     0.2,
      0.0
     ],
     "scale": [
@@ -1256,13 +1261,13 @@
    "tags": [],
    "transform": {
     "position": [
-     0.4,
+     0.6,
      0.0,
-     -6.3
+     -7.05
     ],
     "rotation": [
      0.0,
-     0.0,
+     -0.2,
      0.0
     ],
     "scale": [
@@ -1302,13 +1307,13 @@
    "tags": [],
    "transform": {
     "position": [
-     1.15,
+     1.38,
      0.0,
-     -6.3
+     -6.9
     ],
     "rotation": [
      0.0,
-     0.0,
+     -0.35,
      0.0
     ],
     "scale": [
@@ -1396,70 +1401,7 @@
       "overrides": {
        "color": {
         "type": "color",
-        "value": 14272240
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "start-alcove-rug",
-   "name": "Arcade star rug",
-   "parent": "arcade",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     0.015,
-     -5.75
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "0db76ddf8a0349ca8fc9740ab45091d2",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      2.8,
-      0.02,
-      1.2
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "3bae40aa904a4a60941489f83baf1f07",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 10324694
+        "value": 12897268
        }
       }
      }
@@ -1522,7 +1464,7 @@
       "overrides": {
        "color": {
         "type": "color",
-        "value": 15257073
+        "value": 15252975
        }
       }
      }
@@ -1585,7 +1527,7 @@
       "overrides": {
        "color": {
         "type": "color",
-        "value": 14468592
+        "value": 14465263
        }
       }
      }
@@ -1648,7 +1590,7 @@
       "overrides": {
        "color": {
         "type": "color",
-        "value": 14468592
+        "value": 14465263
        }
       }
      }
@@ -1711,7 +1653,7 @@
       "overrides": {
        "color": {
         "type": "color",
-        "value": 13350378
+        "value": 14204400
        }
       }
      }
@@ -1726,9 +1668,9 @@
    "tags": [],
    "transform": {
     "position": [
-     -1.2,
-     2.45,
-     -6.0
+     -0.75,
+     2.05,
+     -7.2
     ],
     "rotation": [
      0.0,
@@ -1773,8 +1715,8 @@
    "transform": {
     "position": [
      0.0,
-     2.45,
-     -6.0
+     1.75,
+     -7.2
     ],
     "rotation": [
      0.0,
@@ -1782,9 +1724,9 @@
      0.0
     ],
     "scale": [
-     1.0,
-     1.0,
-     1.0
+     1.8,
+     1.8,
+     1.8
     ]
    },
    "components": [
@@ -1818,9 +1760,9 @@
    "tags": [],
    "transform": {
     "position": [
-     1.2,
-     2.45,
-     -6.0
+     0.75,
+     2.15,
+     -7.2
     ],
     "rotation": [
      0.0,
@@ -2796,7 +2738,7 @@
     "position": [
      0.0,
      3.5,
-     -4.3
+     -3.4
     ],
     "rotation": [
      0.0,
@@ -2816,7 +2758,7 @@
      "kind": "point",
      "mode": "stationary",
      "color": 16767392,
-     "intensity": 2.5,
+     "intensity": 1.2,
      "groundColor": 14213877,
      "target": [
       0.0,
@@ -2864,7 +2806,7 @@
      "kind": "point",
      "mode": "stationary",
      "color": 15972586,
-     "intensity": 3.0,
+     "intensity": 2.8,
      "groundColor": 14213877,
      "target": [
       0.0,
@@ -3864,6 +3806,144 @@
      "materials": {},
      "source": "model",
      "model": "asset:f752bb29-b0ec-465f-b84b-1941389edd04",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": false,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-arch",
+   "name": "Arch, plaque and star rug",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     -4.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "645b4cce34e941a499c7a2284beb0012",
+     "materials": {},
+     "source": "model",
+     "model": "asset:8af8922e-8e5f-4b1e-bd86-ab268fcfbb49",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-star-4",
+   "name": "Hanging star 4",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -1.55,
+     2.3,
+     -6.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "111688615943408e8a9b20859624b28c",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": false,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-star-5",
+   "name": "Hanging star 5",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     1.55,
+     2.25,
+     -6.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "30e4a9a6f8d64ba38bee52094bc9377e",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
      "hide": "",
      "overlay": "",
      "overlayMetres": 1.0,
