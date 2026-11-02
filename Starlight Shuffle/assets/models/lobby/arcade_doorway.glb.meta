@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "id": "cf401672-cd07-404a-9061-daa7777fff5f",
+  "type": "model",
+  "importSettings": {
+    "simplifyTriangles": 0.5,
+    "simplifyMaxDeviation": 0.01
+  }
+}

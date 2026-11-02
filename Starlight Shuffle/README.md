@@ -18,11 +18,23 @@ Every server instance runs the same server root (`server/Root.luau`) and is one
 | `lobby` (initial) | `server/Lobby.luau` in the `lobby` scene. Launches land here. | 24 |
 | `cycle` | `server/Cycle.luau`: the mini-games, one after another. | 16 |
 
-**Lobby.** Everyone walks around in their own outfit, as in Sky Lounge. The big gold
-button on the back wall (**Start mini-games**) sends the player to a cycle with room,
-the fullest first, starting one when none has; players pressing it within half a
-second of each other go together. The blue board beside it, and the trophy button
-in the HUD, open the **leaderboard**.
+**Lobby.** Everyone walks around in their own outfit, as in Sky Lounge, in a pastel
+arcade lounge floating on a cloud under a night sky. Tapping the **arcade** (its
+doorway, the little room behind it or a cabinet; "Start mini-games" floats over it)
+sends the player to a cycle with room, the fullest first, starting one when none has;
+players tapping within half a second of each other go together. The **leaderboard**
+board on the wall beside it, and the trophy button in the HUD, open the leaderboard.
+Tap targets are found by id prefix: `start-…` and `leaderboard-…` (`Root.luau`).
+
+**Lobby art.** The lobby scene places the pastel arcade lobby kit's models
+(`assets/models/lobby/`; the kit's sources and notes in `art/lobby/`) exactly where
+the kit's assembled lobby has them: the shop, the sofa corner, the moon rug, the
+constellation walls, the leaderboard and the arcade doorway. The room behind the
+doorway is built from boxes. The sky is Sky Lounge's dome with a painted night sky
+(`tools/lobby_sky.py`), and `tools/lobby_cloud_base.py` makes the cloud it floats
+on. Lighting is baked (`scenes/lobby.lighting.bin`): a baked key and fill light plus
+stationary glows at every lamp, sconce and star. After moving anything static,
+bake again (**Baked lighting** in the editor, or `bake_lighting` over MCP).
 
 **Cycle.** Plays `shared/Games.luau` in order and loops. Each mini-game goes:
 *intro* (its scene loads, everyone lands in it, "Up next" shows for 5 s) → *playing*
@@ -388,14 +400,16 @@ Avatars use Sky Lounge's movement: the owner walks immediately with
 within a speed budget (`server/Arena.luau`). The floor is the scene's baked navmesh
 when it has one. These scenes do not have one yet; until they do, each one's
 `walk-area` entity (`gameplay/WalkArea`, a width and depth) marks a walkable rectangle,
-which `shared/Floor.luau` gives both sides. It has no obstacles, so avatars walk through
-props on it. To use a real navmesh, open the scene and use **Bake navmesh**; it is
-then used instead.
+which `shared/Floor.luau` gives both sides. Numbered `walk-block-1`, `walk-block-2`, …
+entities (`gameplay/WalkBlock`) keep avatars out of smaller rectangles on it: the
+lobby uses them for its furniture. Anything else on the rectangle can be walked
+through. To use a real navmesh, open the scene and use **Bake navmesh**; it is then
+used instead. `tests/floor_test.luau` checks the rectangle and its blocks.
 
 ## Files
 
 - `assets/scripts/Root.luau`: the client root. It wires the controllers, the HUD and
-  the lobby's wall buttons.
+  the lobby's tap targets (the arcade and the leaderboard).
 - `assets/scripts/client/`: `Multiplayer` (the replicated world and every avatar in it),
   `Place` (which place you are in, the cycle's round, your Starlights, the leaderboard,
   moves between places, and routing to the current mini-game's client module),

@@ -121,7 +121,7 @@ local function lobbyHint(place: Place.Controller): w.Widget?
 	return Style.card(w.Row({mainAxisSize = w.MainAxisSize.min, children = {
 		w.Icon({icon = material.star_rounded, size = 18, color = Style.GOLD}),
 		w.SizedBox({width = 8}),
-		w.Flexible({child = Style.text("Tap the big gold button to start the mini-games", Style.style(14, Style.WHITE, ui.FontWeight.w600), 2)}),
+		w.Flexible({child = Style.text("Tap the arcade to start the mini-games", Style.style(14, Style.WHITE, ui.FontWeight.w600), 2)}),
 	}}), p.EdgeInsets.symmetric({horizontal = 16, vertical = 10}), 999)
 end
 

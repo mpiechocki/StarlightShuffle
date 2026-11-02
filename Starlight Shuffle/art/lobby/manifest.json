@@ -1,0 +1,122 @@
+[
+  {
+    "file": "arcade_doorway.glb",
+    "objects": 13,
+    "triangles": 21960
+  },
+  {
+    "file": "leaderboard.glb",
+    "objects": 22,
+    "triangles": 39456
+  },
+  {
+    "file": "lavender_wall.glb",
+    "objects": 12,
+    "triangles": 2148
+  },
+  {
+    "file": "constellation_wall.glb",
+    "objects": 18,
+    "triangles": 1960
+  },
+  {
+    "file": "arched_window.glb",
+    "objects": 10,
+    "triangles": 2148
+  },
+  {
+    "file": "shop_stall.glb",
+    "objects": 48,
+    "triangles": 21360
+  },
+  {
+    "file": "cloud_sofa.glb",
+    "objects": 26,
+    "triangles": 5836
+  },
+  {
+    "file": "tufted_bench.glb",
+    "objects": 20,
+    "triangles": 4736
+  },
+  {
+    "file": "coffee_table.glb",
+    "objects": 10,
+    "triangles": 2048
+  },
+  {
+    "file": "ottoman.glb",
+    "objects": 3,
+    "triangles": 404
+  },
+  {
+    "file": "side_table.glb",
+    "objects": 4,
+    "triangles": 276
+  },
+  {
+    "file": "display_shelf.glb",
+    "objects": 12,
+    "triangles": 2148
+  },
+  {
+    "file": "pink_arcade.glb",
+    "objects": 15,
+    "triangles": 2408
+  },
+  {
+    "file": "blue_arcade.glb",
+    "objects": 15,
+    "triangles": 2408
+  },
+  {
+    "file": "palm_planter.glb",
+    "objects": 22,
+    "triangles": 2328
+  },
+  {
+    "file": "cloud_floor_lamp.glb",
+    "objects": 18,
+    "triangles": 2272
+  },
+  {
+    "file": "cloud_sconce.glb",
+    "objects": 5,
+    "triangles": 1232
+  },
+  {
+    "file": "star_pendant.glb",
+    "objects": 3,
+    "triangles": 152
+  },
+  {
+    "file": "tabletop_decor.glb",
+    "objects": 38,
+    "triangles": 3472
+  },
+  {
+    "file": "floor_cloud_platform.glb",
+    "objects": 281,
+    "triangles": 61632
+  },
+  {
+    "file": "moon_rug.glb",
+    "objects": 53,
+    "triangles": 9708
+  },
+  {
+    "file": "controller_pillow.glb",
+    "objects": 9,
+    "triangles": 2400
+  },
+  {
+    "file": "pastel_lobby.glb",
+    "objects": 877,
+    "triangles": 223924
+  },
+  {
+    "file": "asset_catalog.glb",
+    "objects": 376,
+    "triangles": 130860
+  }
+]

@@ -4,9 +4,9 @@
 -- mini-game) and replicates everyone's avatar (client/Multiplayer); the player
 -- walks theirs with the movement controls and follow camera ported from Sky
 -- Lounge, wearing their own outfit. client/Place knows which place this is
--- and drives the HUD (widgets/Hud): in the lobby, tapping the big gold button
--- on the wall starts the mini-game cycle and the blue one opens the
--- leaderboard; in the cycle, the HUD's head shows the mini-game and its
+-- and drives the HUD (widgets/Hud): in the lobby, tapping the arcade (its
+-- doorway, the room behind it or a cabinet) starts the mini-game cycle and the
+-- leaderboard board on the wall opens the leaderboard; in the cycle, the HUD's head shows the mini-game and its
 -- Pause/Play button. Moving between places keeps this VM: everything that
 -- belonged to the previous server instance resets. The app's loading screen
 -- stays up until we stand dressed in the first scene.
@@ -28,9 +28,10 @@ local WallLabels = require("./widgets/WallLabels")
 --@property
 local title: string = "Starlight Shuffle"
 
--- The lobby's wall buttons, by the authored ids a tap may hit.
-local START_IDS = { ["start-button"] = true, ["start-frame"] = true, ["start-stars"] = true }
-local BOARD_IDS = { ["leaderboard-button"] = true, ["leaderboard-frame"] = true }
+-- The lobby's two tap targets, by the prefix of the authored ids a tap may hit:
+-- the arcade (start-…) and the leaderboard (leaderboard-…).
+local function starts(id: string): boolean return string.sub(id, 1, 6) == "start-" end
+local function opensBoard(id: string): boolean return string.sub(id, 1, 12) == "leaderboard-" end
 
 local controls: Controls.Controller? = nil
 local multiplayer: Multiplayer.Controller? = nil
@@ -86,8 +87,8 @@ return engine.defineScript({
 			if here.place == "cycle" then return here:tap(x, y) end
 			if here.place ~= "lobby" then return false end
 			local id = tapped(walker, x, y)
-			if id and START_IDS[id] then here:start(); return true end
-			if id and BOARD_IDS[id] then here:openBoard(true); return true end
+			if id and starts(id) then here:start(); return true end
+			if id and opensBoard(id) then here:openBoard(true); return true end
 			return false
 		end
 		runtime.runView(w.Stack({fit = w.StackFit.expand, children = {

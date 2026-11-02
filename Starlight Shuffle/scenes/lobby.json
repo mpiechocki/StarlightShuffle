@@ -3,9 +3,9 @@
  "name": "lobby",
  "activeCamera": "camera-main",
  "environment": {
-  "background": 2761040,
-  "fogNear": 30.0,
-  "fogFar": 70.0,
+  "background": 3878243,
+  "fogNear": 45.0,
+  "fogFar": 150.0,
   "envDiv": 2.0,
   "renderingPreset": {
    "library": "moonbase.standard",
@@ -68,8 +68,8 @@
    ]
   },
   {
-   "id": "ambient",
-   "name": "Ambient light",
+   "id": "sky-dome",
+   "name": "Sky dome",
    "enabled": true,
    "tags": [],
    "transform": {
@@ -91,103 +91,60 @@
    },
    "components": [
     {
-     "type": "Light",
-     "id": "6f1cbd3ea518404190e096e1dc1477fa",
-     "kind": "hemisphere",
-     "mode": "realtime",
-     "color": 13621503,
-     "intensity": 1.6,
-     "groundColor": 2761542,
-     "target": [
-      0.0,
-      0.0,
-      0.0
+     "type": "MeshRenderer",
+     "id": "dbdaad1e773e49b5a0a2b6e60528e545",
+     "materials": {
+      "SkyDome": {
+       "shader": {
+        "library": "moonbase.standard",
+        "revision": "1",
+        "shader": "importedUnlit"
+       },
+       "overrides": {
+        "baseColor": {
+         "type": "vec3",
+         "value": [
+          1.0,
+          1.0,
+          1.0
+         ]
+        },
+        "fog": {
+         "type": "boolean",
+         "value": false
+        },
+        "mapMode": {
+         "type": "choice",
+         "value": "uv"
+        },
+        "texture": {
+         "type": "texture",
+         "value": "asset:344f9042-af48-48b3-9342-e8a5fb94a25c"
+        }
+       }
+      }
+     },
+     "source": "model",
+     "model": "asset:8c689847-2dcd-4ec3-b149-efbdf17f41e9",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
      ],
-     "distance": 20.0,
-     "decay": 1.5,
-     "angle": 0.6,
-     "penumbra": 0.6,
      "castShadow": false,
-     "shadowMapSize": 1024,
-     "shadowBias": 0.0,
-     "normalBias": 0.03
+     "receiveShadow": false,
+     "static": false,
+     "lightmapScale": 1.0,
+     "fades": false
     }
    ]
   },
   {
-   "id": "sun",
-   "name": "Key light",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     4.0,
-     10.0,
-     6.0
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "Light",
-     "id": "4400595f79424a5fa5f19ec2303fc28d",
-     "kind": "directional",
-     "mode": "realtime",
-     "color": 16773590,
-     "intensity": 1.8,
-     "groundColor": 14213877,
-     "target": [
-      0.0,
-      0.0,
-      0.0
-     ],
-     "distance": 20.0,
-     "decay": 1.5,
-     "angle": 0.6,
-     "penumbra": 0.6,
-     "castShadow": true,
-     "shadowMapSize": 1024,
-     "shadowBias": 0.0,
-     "normalBias": 0.03
-    }
-   ]
-  },
-  {
-   "id": "player-spawn",
-   "name": "Player spawn",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     0.0,
-     1.5
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": []
-  },
-  {
-   "id": "architecture",
-   "name": "Architecture",
+   "id": "room",
+   "name": "Room",
    "enabled": true,
    "tags": [],
    "transform": {
@@ -210,15 +167,15 @@
    "components": []
   },
   {
-   "id": "floor",
-   "name": "Floor",
-   "parent": "architecture",
+   "id": "platform",
+   "name": "Cloud platform and floor",
+   "parent": "room",
    "enabled": true,
    "tags": [],
    "transform": {
     "position": [
      0.0,
-     -0.2,
+     0.0,
      0.0
     ],
     "rotation": [
@@ -235,306 +192,37 @@
    "components": [
     {
      "type": "MeshRenderer",
-     "id": "f7ccd52bfdc847f8ba5d63c8e893f550",
+     "id": "b25487f32b5049aa9489c8f6c09b7af4",
      "materials": {},
-     "source": "box",
-     "model": "",
+     "source": "model",
+     "model": "asset:300b3b10-77c2-4afc-92c3-4b3912734acb",
      "hide": "",
      "overlay": "",
      "overlayMetres": 1.0,
      "size": [
-      18.0,
-      0.4,
-      14.0
+      1.0,
+      1.0,
+      1.0
      ],
      "castShadow": true,
      "receiveShadow": true,
-     "static": false,
+     "static": true,
      "lightmapScale": 1.0,
      "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "ef0323e910324737b8c1c24ca3890ea2",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 2827600
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "wall-back",
-   "name": "Wall back",
-   "parent": "architecture",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     1.8,
-     -7.2
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "7cfbe155a9d54089b0567949e3b754a2",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      18.8,
-      3.6,
-      0.4
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "f38d28849f3b4436909e230a6f7e0ab3",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 3814000
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "wall-left",
-   "name": "Wall left",
-   "parent": "architecture",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     -9.2,
-     1.8,
-     0.0
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "5c90d799708e44b1a252a2d440cb7e37",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      0.4,
-      3.6,
-      14.0
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "edac190a0e6f42b5890736d5ed8a7555",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 3814000
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "wall-right",
-   "name": "Wall right",
-   "parent": "architecture",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     9.2,
-     1.8,
-     0.0
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "2a507ff314354ae19bd9bf7b3281f441",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      0.4,
-      3.6,
-      14.0
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "7931b0a9e8504df3b542fb5766ceacd6",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 3814000
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "trim-front",
-   "name": "Trim front",
-   "parent": "architecture",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     0.15,
-     7.2
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "7c8ac7a9138f42edaa29cd9822f9213e",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      18.8,
-      0.3,
-      0.4
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "30f120b283d64e8ba069917d0772a1ed",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 5918624
-       }
-      }
-     }
     }
    ]
   },
   {
    "id": "rug",
-   "name": "Rug",
-   "parent": "architecture",
+   "name": "Pixel moon rug",
+   "parent": "room",
    "enabled": true,
    "tags": [],
    "transform": {
     "position": [
      0.0,
-     0.01,
-     0.5
+     0.0,
+     0.65
     ],
     "rotation": [
      0.0,
@@ -550,7 +238,1135 @@
    "components": [
     {
      "type": "MeshRenderer",
-     "id": "3009daf28a9d4f349dd188023f1f43d1",
+     "id": "87475c0b00594e2ebb37e3da1081e284",
+     "materials": {},
+     "source": "model",
+     "model": "asset:43c385eb-df91-4ff7-a760-8631834f5d8f",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "wall-1",
+   "name": "Lavender wall 1",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -6.45,
+     0.0,
+     -4.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "e45a049787e84b05b91e736b90bb8fc5",
+     "materials": {},
+     "source": "model",
+     "model": "asset:a309afa8-e26f-41f3-b788-6e477ad9f3bd",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "wall-2",
+   "name": "Lavender wall 2",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -3.25,
+     0.0,
+     -4.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "7a78ab73c42a485f85dd3dd21ff17588",
+     "materials": {},
+     "source": "model",
+     "model": "asset:a309afa8-e26f-41f3-b788-6e477ad9f3bd",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "wall-3",
+   "name": "Lavender wall 3",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     3.25,
+     0.0,
+     -4.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "0f7cfe26b0174d5a8ccddd7233ff6e8d",
+     "materials": {},
+     "source": "model",
+     "model": "asset:a309afa8-e26f-41f3-b788-6e477ad9f3bd",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "wall-4",
+   "name": "Lavender wall 4",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     6.45,
+     0.0,
+     -4.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "50eac792606842e6b7214048a43c23f1",
+     "materials": {},
+     "source": "model",
+     "model": "asset:a309afa8-e26f-41f3-b788-6e477ad9f3bd",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "constellation-left-1",
+   "name": "Constellation wall left 1",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.9,
+     0.0,
+     3.2
+    ],
+    "rotation": [
+     0.0,
+     1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "3a78263507874926a12b7a6d88a80926",
+     "materials": {},
+     "source": "model",
+     "model": "asset:b129a304-cdd7-4bb5-872f-af3703a73c7d",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "constellation-left-2",
+   "name": "Constellation wall left 2",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.9,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "f3632df6fdb747a6916e39bd1666eda6",
+     "materials": {},
+     "source": "model",
+     "model": "asset:b129a304-cdd7-4bb5-872f-af3703a73c7d",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "constellation-left-3",
+   "name": "Constellation wall left 3",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.9,
+     0.0,
+     -3.2
+    ],
+    "rotation": [
+     0.0,
+     1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "3800a9a3cf9d4b869252cdc0f27a61cb",
+     "materials": {},
+     "source": "model",
+     "model": "asset:b129a304-cdd7-4bb5-872f-af3703a73c7d",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "window-left-1",
+   "name": "Arched window left 1",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.73,
+     0.55,
+     2.4
+    ],
+    "rotation": [
+     0.0,
+     1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "5205d575652b437ea9b5771b526baf7e",
+     "materials": {},
+     "source": "model",
+     "model": "asset:e58b9c02-e3da-4fa5-b092-9cc8b6a592bb",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "window-left-2",
+   "name": "Arched window left 2",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.73,
+     0.55,
+     -2.1
+    ],
+    "rotation": [
+     0.0,
+     1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "a0e7e82822b1411292ef2cb24f9c6e09",
+     "materials": {},
+     "source": "model",
+     "model": "asset:e58b9c02-e3da-4fa5-b092-9cc8b6a592bb",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "sconce-left-1",
+   "name": "Cloud sconce left 1",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.66,
+     2.1,
+     2.0
+    ],
+    "rotation": [
+     0.0,
+     1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "e4a7b8ab53864cf0ad1b09a366173c01",
+     "materials": {},
+     "source": "model",
+     "model": "asset:f0386437-54cc-42ca-91ba-1b46089c8f97",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "sconce-left-2",
+   "name": "Cloud sconce left 2",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.66,
+     2.1,
+     -2.0
+    ],
+    "rotation": [
+     0.0,
+     1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "e45abcf31ca445358310549427c04c21",
+     "materials": {},
+     "source": "model",
+     "model": "asset:f0386437-54cc-42ca-91ba-1b46089c8f97",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "constellation-right-1",
+   "name": "Constellation wall right 1",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.9,
+     0.0,
+     3.2
+    ],
+    "rotation": [
+     0.0,
+     -1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "5889a425306d45bbbf8c87a3a3e48226",
+     "materials": {},
+     "source": "model",
+     "model": "asset:b129a304-cdd7-4bb5-872f-af3703a73c7d",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "constellation-right-2",
+   "name": "Constellation wall right 2",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.9,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     -1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "09f38e810a8b4d0fb50eb22ad526488e",
+     "materials": {},
+     "source": "model",
+     "model": "asset:b129a304-cdd7-4bb5-872f-af3703a73c7d",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "constellation-right-3",
+   "name": "Constellation wall right 3",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.9,
+     0.0,
+     -3.2
+    ],
+    "rotation": [
+     0.0,
+     -1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "55a8e724b493432c8b09cc1d1bc0fa28",
+     "materials": {},
+     "source": "model",
+     "model": "asset:b129a304-cdd7-4bb5-872f-af3703a73c7d",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "window-right-1",
+   "name": "Arched window right 1",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.73,
+     0.55,
+     2.4
+    ],
+    "rotation": [
+     0.0,
+     -1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "e4c0eb7a005341b293323929fa5770b7",
+     "materials": {},
+     "source": "model",
+     "model": "asset:e58b9c02-e3da-4fa5-b092-9cc8b6a592bb",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "window-right-2",
+   "name": "Arched window right 2",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.73,
+     0.55,
+     -2.1
+    ],
+    "rotation": [
+     0.0,
+     -1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "5441161b7aef4c66a036891fed6b3350",
+     "materials": {},
+     "source": "model",
+     "model": "asset:e58b9c02-e3da-4fa5-b092-9cc8b6a592bb",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "sconce-right-1",
+   "name": "Cloud sconce right 1",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.66,
+     2.1,
+     2.0
+    ],
+    "rotation": [
+     0.0,
+     -1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "7fb8db5c6447419e88b15a074d701226",
+     "materials": {},
+     "source": "model",
+     "model": "asset:f0386437-54cc-42ca-91ba-1b46089c8f97",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "sconce-right-2",
+   "name": "Cloud sconce right 2",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.66,
+     2.1,
+     -2.0
+    ],
+    "rotation": [
+     0.0,
+     -1.5707963267948966,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "b71f75c4060f4e60beea5363473d5fbd",
+     "materials": {},
+     "source": "model",
+     "model": "asset:f0386437-54cc-42ca-91ba-1b46089c8f97",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "arcade",
+   "name": "Arcade (tap to start)",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": []
+  },
+  {
+   "id": "start-doorway",
+   "name": "Arcade doorway",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     -4.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "9839b43483ad4e708192f51ac1c929cb",
+     "materials": {},
+     "source": "model",
+     "model": "asset:cf401672-cd07-404a-9061-daa7777fff5f",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-cabinet-1",
+   "name": "Arcade cabinet 1",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -1.1,
+     0.0,
+     -6.3
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "a8feb2a03ce7445f984761d08195a992",
+     "materials": {},
+     "source": "model",
+     "model": "asset:0321d7f0-7968-468a-b3d6-56c567ab0408",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-cabinet-2",
+   "name": "Arcade cabinet 2",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -0.36,
+     0.0,
+     -6.3
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "25a4b0f26c1140069f3dca84eae89dc9",
+     "materials": {},
+     "source": "model",
+     "model": "asset:6c6beca4-5f8a-4a89-bab5-93e1b22b411f",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-cabinet-3",
+   "name": "Arcade cabinet 3",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.4,
+     0.0,
+     -6.3
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "d191ff263f9b40a5af52996a51d8e11a",
+     "materials": {},
+     "source": "model",
+     "model": "asset:0321d7f0-7968-468a-b3d6-56c567ab0408",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-cabinet-4",
+   "name": "Arcade cabinet 4",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     1.15,
+     0.0,
+     -6.3
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "5dfe2f63441c449586971015b1683a4e",
+     "materials": {},
+     "source": "model",
+     "model": "asset:6c6beca4-5f8a-4a89-bab5-93e1b22b411f",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-floor",
+   "name": "Arcade floor",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     -0.04,
+     -6.15
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "714d5580b0564776a3b6fc8fdb8af62f",
      "materials": {},
      "source": "box",
      "model": "",
@@ -558,9 +1374,72 @@
      "overlay": "",
      "overlayMetres": 1.0,
      "size": [
-      8.0,
+      3.9,
+      0.1,
+      2.7
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": false,
+     "lightmapScale": 1.0,
+     "fades": true
+    },
+    {
+     "type": "Material",
+     "id": "924d1c8803b5414685274850b030b052",
+     "assignment": {
+      "shader": {
+       "library": "moonbase.standard",
+       "revision": "1",
+       "shader": "lit"
+      },
+      "overrides": {
+       "color": {
+        "type": "color",
+        "value": 14272240
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-rug",
+   "name": "Arcade star rug",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.015,
+     -5.75
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "0db76ddf8a0349ca8fc9740ab45091d2",
+     "materials": {},
+     "source": "box",
+     "model": "",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      2.8,
       0.02,
-      6.0
+      1.2
      ],
      "castShadow": true,
      "receiveShadow": true,
@@ -570,7 +1449,7 @@
     },
     {
      "type": "Material",
-     "id": "9be1d3ec2aee41bca01e1018b600ed87",
+     "id": "3bae40aa904a4a60941489f83baf1f07",
      "assignment": {
       "shader": {
        "library": "moonbase.standard",
@@ -580,7 +1459,7 @@
       "overrides": {
        "color": {
         "type": "color",
-        "value": 4603014
+        "value": 10324694
        }
       }
      }
@@ -588,15 +1467,406 @@
    ]
   },
   {
-   "id": "start-station",
-   "name": "Start station",
+   "id": "start-alcove-back",
+   "name": "Arcade back wall",
+   "parent": "arcade",
    "enabled": true,
    "tags": [],
    "transform": {
     "position": [
      0.0,
+     1.8,
+     -7.55
+    ],
+    "rotation": [
      0.0,
-     -6.95
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "afdbf3e3081a4482aca57613fee4eac0",
+     "materials": {},
+     "source": "box",
+     "model": "",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      4.3,
+      3.6,
+      0.2
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": false,
+     "lightmapScale": 1.0,
+     "fades": true
+    },
+    {
+     "type": "Material",
+     "id": "d09392b73f0146bba92c23736cb182e9",
+     "assignment": {
+      "shader": {
+       "library": "moonbase.standard",
+       "revision": "1",
+       "shader": "lit"
+      },
+      "overrides": {
+       "color": {
+        "type": "color",
+        "value": 15257073
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-left",
+   "name": "Arcade left wall",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -2.05,
+     1.8,
+     -6.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "1c26b6ec1d364bfc8ecfaca69fc66ef6",
+     "materials": {},
+     "source": "box",
+     "model": "",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      0.2,
+      3.6,
+      2.9
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": false,
+     "lightmapScale": 1.0,
+     "fades": true
+    },
+    {
+     "type": "Material",
+     "id": "e1644a9640d34dd4819a074969113356",
+     "assignment": {
+      "shader": {
+       "library": "moonbase.standard",
+       "revision": "1",
+       "shader": "lit"
+      },
+      "overrides": {
+       "color": {
+        "type": "color",
+        "value": 14468592
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-right",
+   "name": "Arcade right wall",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     2.05,
+     1.8,
+     -6.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "d6ac22e561764681bda727c47c62dfe9",
+     "materials": {},
+     "source": "box",
+     "model": "",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      0.2,
+      3.6,
+      2.9
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": false,
+     "lightmapScale": 1.0,
+     "fades": true
+    },
+    {
+     "type": "Material",
+     "id": "0d79ad280732491bbfd97968ae57d861",
+     "assignment": {
+      "shader": {
+       "library": "moonbase.standard",
+       "revision": "1",
+       "shader": "lit"
+      },
+      "overrides": {
+       "color": {
+        "type": "color",
+        "value": 14468592
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-ceiling",
+   "name": "Arcade ceiling",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     3.55,
+     -6.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "82fc42e6a06f4ce38fcb34d17a942857",
+     "materials": {},
+     "source": "box",
+     "model": "",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      4.3,
+      0.1,
+      2.9
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": false,
+     "lightmapScale": 1.0,
+     "fades": true
+    },
+    {
+     "type": "Material",
+     "id": "16a099e3c61648e79b7484bdd128046b",
+     "assignment": {
+      "shader": {
+       "library": "moonbase.standard",
+       "revision": "1",
+       "shader": "lit"
+      },
+      "overrides": {
+       "color": {
+        "type": "color",
+        "value": 13350378
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-star-1",
+   "name": "Arcade star light 1",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -1.2,
+     2.45,
+     -6.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "e78a4a9b90ea480f835e811bc68963e9",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-star-2",
+   "name": "Arcade star light 2",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     2.45,
+     -6.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "3420468d5d6246a08de74814c7c11c8d",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-alcove-star-3",
+   "name": "Arcade star light 3",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     1.2,
+     2.45,
+     -6.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "8f13b1270d824c388db2725e230eead1",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "start-label",
+   "name": "Start label",
+   "parent": "arcade",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     4.1,
+     -4.75
     ],
     "rotation": [
      0.0,
@@ -612,15 +1882,246 @@
    "components": []
   },
   {
-   "id": "start-frame",
-   "name": "Start frame",
-   "parent": "start-station",
+   "id": "leaderboard-board",
+   "name": "Leaderboard (tap to open)",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -3.3,
+     0.72,
+     -4.48
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "7c7a9210e50b417c87bb7e98940e130d",
+     "materials": {},
+     "source": "model",
+     "model": "asset:698b2ca4-138a-4fd7-89c7-007dddc7a56f",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "leaderboard-label",
+   "name": "Leaderboard label",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -3.3,
+     3.75,
+     -4.45
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": []
+  },
+  {
+   "id": "furniture",
+   "name": "Furniture",
    "enabled": true,
    "tags": [],
    "transform": {
     "position": [
      0.0,
-     1.9,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": []
+  },
+  {
+   "id": "shop",
+   "name": "Shop stall",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -5.6,
+     0.0,
+     -1.55
+    ],
+    "rotation": [
+     0.0,
+     0.12,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "dc8da2422d0d4e0a92be7342fb3edf6f",
+     "materials": {},
+     "source": "model",
+     "model": "asset:8a9629fa-4fcf-4080-bc7c-393ddd529acc",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "display-shelf",
+   "name": "Display shelf",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.0,
+     0.0,
+     0.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "6632cf24b7704ef28e5e2201f8fb8254",
+     "materials": {},
+     "source": "model",
+     "model": "asset:2ba99b37-2f34-4114-acaf-07a28d0b9481",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "sofa",
+   "name": "Cloud sofa",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     5.7,
+     0.0,
+     -1.5
+    ],
+    "rotation": [
+     0.0,
+     -0.16,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "5e8b0c8f733849f0846c54c565705868",
+     "materials": {},
+     "source": "model",
+     "model": "asset:4c5a6ce1-e830-4ab7-a788-86611931da6f",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "coffee-table",
+   "name": "Cloud coffee table",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     5.2,
+     0.0,
      0.1
     ],
     "rotation": [
@@ -637,219 +2138,36 @@
    "components": [
     {
      "type": "MeshRenderer",
-     "id": "97459fe170f54189a4d16d0b73416870",
+     "id": "d0f0d1aa476f47288c40045a2d588bc3",
      "materials": {},
-     "source": "box",
-     "model": "",
+     "source": "model",
+     "model": "asset:2bb78a06-adfc-48c3-9954-8b20f51d2d75",
      "hide": "",
      "overlay": "",
      "overlayMetres": 1.0,
      "size": [
-      5.2,
-      2.6,
-      0.2
+      1.0,
+      1.0,
+      1.0
      ],
      "castShadow": true,
      "receiveShadow": true,
-     "static": false,
+     "static": true,
      "lightmapScale": 1.0,
      "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "6f384c0849b544319848c56d89715212",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 1775158
-       }
-      }
-     }
     }
    ]
   },
   {
-   "id": "start-button",
-   "name": "Start button",
-   "parent": "start-station",
+   "id": "tabletop-decor",
+   "name": "Flowers and books",
+   "parent": "furniture",
    "enabled": true,
    "tags": [],
    "transform": {
     "position": [
-     0.0,
-     1.8,
-     0.3
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "8ea38ac766c249878e54144c5a70c1f1",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      4.2,
-      1.6,
-      0.3
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "091200bb7ba74039be34406b7b3ef1a8",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 16763210
-       },
-       "emissive": {
-        "type": "color",
-        "value": 16751898
-       },
-       "emissiveIntensity": {
-        "type": "scalar",
-        "value": 1.2
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "start-stars",
-   "name": "Start stars",
-   "parent": "start-station",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     3.0,
-     0.25
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "85e01c99bb56407fa1196a2796c22e93",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      3.0,
-      0.18,
-      0.12
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "ca882ab87262488ba955b7aa879347a8",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 16774064
-       },
-       "emissive": {
-        "type": "color",
-        "value": 16774064
-       },
-       "emissiveIntensity": {
-        "type": "scalar",
-        "value": 2.0
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "leaderboard-station",
-   "name": "Leaderboard station",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     -4.6,
-     0.0,
-     -6.95
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": []
-  },
-  {
-   "id": "leaderboard-frame",
-   "name": "Leaderboard frame",
-   "parent": "leaderboard-station",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     1.9,
+     5.05,
+     0.55,
      0.1
     ],
     "rotation": [
@@ -866,338 +2184,37 @@
    "components": [
     {
      "type": "MeshRenderer",
-     "id": "a8725f4565f6408faecdd1654f90dedf",
+     "id": "75dedb3f142143f7b2787a2932bf33f5",
      "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      3.0,
-      2.6,
-      0.2
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "efc1601973fb463599bd95631e402ab5",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 1775158
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "leaderboard-button",
-   "name": "Leaderboard button",
-   "parent": "leaderboard-station",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     1.8,
-     0.28
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "b7e9e4db110643038848d1fee4d79bf1",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      2.4,
-      2.0,
-      0.25
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "ccb4292a4eb44ce7a56f62f7dd9d9423",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 7328767
-       },
-       "emissive": {
-        "type": "color",
-        "value": 2794495
-       },
-       "emissiveIntensity": {
-        "type": "scalar",
-        "value": 0.9
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "dressing",
-   "name": "Dressing",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": []
-  },
-  {
-   "id": "pillar-l",
-   "name": "Pillar left",
-   "parent": "dressing",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     -2.85,
-     1.8,
-     -6.6
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "aab0d80525194c32b249af3ccffb83fe",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      0.5,
-      3.6,
-      0.5
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "8912017834cc4231abf08341ba9c8a20",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 5918624
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "pillar-r",
-   "name": "Pillar right",
-   "parent": "dressing",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     2.85,
-     1.8,
-     -6.6
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "c08a0e7cb1844234a9fe6d8f16355126",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      0.5,
-      3.6,
-      0.5
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "5f648012f69046ea8e2a230f5a3d3cda",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 5918624
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "planter-1",
-   "name": "Planter 1",
-   "parent": "dressing",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     7.5,
-     0.35,
-     -5.5
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "44da6c781dcf48818e95c7da9c9ebf76",
-     "materials": {},
-     "source": "box",
-     "model": "",
+     "source": "model",
+     "model": "asset:213b10c7-3c5e-4cac-ad54-d295657e65d1",
      "hide": "",
      "overlay": "",
      "overlayMetres": 1.0,
      "size": [
       1.0,
-      0.7,
+      1.0,
       1.0
      ],
      "castShadow": true,
      "receiveShadow": true,
-     "static": false,
+     "static": true,
      "lightmapScale": 1.0,
      "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "2ea6c7aa97ca47d48ca8271c65e70238",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 7031434
-       }
-      }
-     }
     }
    ]
   },
   {
-   "id": "bush-1",
-   "name": "Bush 1",
-   "parent": "dressing",
+   "id": "ottoman",
+   "name": "Round ottoman",
+   "parent": "furniture",
    "enabled": true,
    "tags": [],
    "transform": {
     "position": [
-     7.5,
-     1.0,
-     -5.5
+     6.1,
+     0.0,
+     1.0
     ],
     "rotation": [
      0.0,
@@ -1213,179 +2230,174 @@
    "components": [
     {
      "type": "MeshRenderer",
-     "id": "348ffdcf527c4c24ab55f8e198ce024e",
+     "id": "09c724acd03542fe81235b3bf75ba288",
      "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      0.9,
-      0.7,
-      0.9
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "3b7f8d06de144a928515dfdd3bccd8a9",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 4699002
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "planter-2",
-   "name": "Planter 2",
-   "parent": "dressing",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     -7.5,
-     0.35,
-     5.0
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "1270100531034a0bb9b3499819806e13",
-     "materials": {},
-     "source": "box",
-     "model": "",
+     "source": "model",
+     "model": "asset:e33ae6da-26ab-4315-98ca-582fc0d7e48a",
      "hide": "",
      "overlay": "",
      "overlayMetres": 1.0,
      "size": [
       1.0,
-      0.7,
+      1.0,
       1.0
      ],
      "castShadow": true,
      "receiveShadow": true,
-     "static": false,
+     "static": true,
      "lightmapScale": 1.0,
      "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "a920461314e04d48b161be8adcdafb80",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 7031434
-       }
-      }
-     }
-    }
-   ]
-  },
-  {
-   "id": "bush-2",
-   "name": "Bush 2",
-   "parent": "dressing",
-   "enabled": true,
-   "tags": [],
-   "transform": {
-    "position": [
-     -7.5,
-     1.0,
-     5.0
-    ],
-    "rotation": [
-     0.0,
-     0.0,
-     0.0
-    ],
-    "scale": [
-     1.0,
-     1.0,
-     1.0
-    ]
-   },
-   "components": [
-    {
-     "type": "MeshRenderer",
-     "id": "d7230c2a088c4069b3579950ae3454e7",
-     "materials": {},
-     "source": "box",
-     "model": "",
-     "hide": "",
-     "overlay": "",
-     "overlayMetres": 1.0,
-     "size": [
-      0.9,
-      0.7,
-      0.9
-     ],
-     "castShadow": true,
-     "receiveShadow": true,
-     "static": false,
-     "lightmapScale": 1.0,
-     "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "79d82ff223be4e86a1e5394fdc082955",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 4699002
-       }
-      }
-     }
     }
    ]
   },
   {
    "id": "bench",
-   "name": "Bench",
-   "parent": "dressing",
+   "name": "Tufted bench",
+   "parent": "furniture",
    "enabled": true,
    "tags": [],
    "transform": {
     "position": [
-     6.0,
-     0.25,
+     5.3,
+     0.0,
+     3.4
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "d79a1141c7e342da8aaae93843f9a814",
+     "materials": {},
+     "source": "model",
+     "model": "asset:a48ce7d4-6f8a-4292-9ffb-a72c75a4a7ce",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "side-table",
+   "name": "Star side table",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.1,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "53d2051a59574f25a601a20cba1430e9",
+     "materials": {},
+     "source": "model",
+     "model": "asset:27bc7a83-4751-4f12-84df-4f7177055136",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "table-star",
+   "name": "Table star light",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.1,
+     0.78,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "eec3b402191948a6a07a0f4835d399a4",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "planter-1",
+   "name": "Palm planter 1",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -6.7,
+     0.0,
      3.5
     ],
     "rotation": [
@@ -1402,46 +2414,213 @@
    "components": [
     {
      "type": "MeshRenderer",
-     "id": "772bc78e87864147980b1e732860eb2c",
+     "id": "58594759ccdf48e89b86d11ed0884812",
      "materials": {},
-     "source": "box",
-     "model": "",
+     "source": "model",
+     "model": "asset:73942898-426c-46a3-9e76-d8f7de13dc08",
      "hide": "",
      "overlay": "",
      "overlayMetres": 1.0,
      "size": [
-      2.4,
-      0.5,
-      0.8
+      1.0,
+      1.0,
+      1.0
      ],
      "castShadow": true,
      "receiveShadow": true,
-     "static": false,
+     "static": true,
      "lightmapScale": 1.0,
      "fades": true
-    },
-    {
-     "type": "Material",
-     "id": "26f3620391f64fc3a27616a21c6b579a",
-     "assignment": {
-      "shader": {
-       "library": "moonbase.standard",
-       "revision": "1",
-       "shader": "lit"
-      },
-      "overrides": {
-       "color": {
-        "type": "color",
-        "value": 8019002
-       }
-      }
-     }
     }
    ]
   },
   {
-   "id": "walk-area",
-   "name": "Walk area",
+   "id": "planter-2",
+   "name": "Palm planter 2",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     4.0,
+     0.0,
+     -3.75
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "741640650d6d4f96a0957ed71414b8a5",
+     "materials": {},
+     "source": "model",
+     "model": "asset:73942898-426c-46a3-9e76-d8f7de13dc08",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "floor-lamp",
+   "name": "Cloud floor lamp",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     6.3,
+     0.0,
+     -3.4
+    ],
+    "rotation": [
+     0.0,
+     3.141592653589793,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "335468024de9456b92215e0558b0f3d6",
+     "materials": {},
+     "source": "model",
+     "model": "asset:e50f9e70-e2e1-4c2d-9d5b-9f01a2258bf4",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "wall-star-1",
+   "name": "Wall star light 1",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -2.0,
+     2.3,
+     -4.48
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "b90d5d773126457c8ff3a2498227a7ee",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "wall-star-2",
+   "name": "Wall star light 2",
+   "parent": "furniture",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     2.0,
+     2.3,
+     -4.48
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "f3b69315346c4656a1ec90e354042ca1",
+     "materials": {},
+     "source": "model",
+     "model": "asset:3bb2529d-b31e-41da-a80d-5b7d6d37eade",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": true,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
+    }
+   ]
+  },
+  {
+   "id": "lights",
+   "name": "Lights",
    "enabled": true,
    "tags": [],
    "transform": {
@@ -1449,6 +2628,703 @@
      0.0,
      0.0,
      0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": []
+  },
+  {
+   "id": "ambient",
+   "name": "Ambient",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "6bf1c88d7a584e7ea0e46cd074f8331f",
+     "kind": "hemisphere",
+     "mode": "realtime",
+     "color": 15391999,
+     "intensity": 1.5,
+     "groundColor": 9138094,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 0.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "key-light",
+   "name": "Key light",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -5.0,
+     10.0,
+     9.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "6993c3c90ba14e4d92d2a91e27afb1b1",
+     "kind": "directional",
+     "mode": "baked",
+     "color": 16773346,
+     "intensity": 1.3,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 30.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": true,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "fill-light",
+   "name": "Fill light",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     8.0,
+     6.0,
+     4.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "bc499a46a2a2409784667fd6f7f2724f",
+     "kind": "directional",
+     "mode": "baked",
+     "color": 14075647,
+     "intensity": 0.6,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 30.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-arcade-sign",
+   "name": "Glow arcade sign",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     3.5,
+     -4.3
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "1d21f06039a843da8b07d16d128f7bce",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16767392,
+     "intensity": 2.5,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 5.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-arcade-room",
+   "name": "Glow arcade room",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     2.8,
+     -6.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "350384fd400a4ea8b90c473ff0365abc",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 15972586,
+     "intensity": 3.0,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 5.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-wall-stars",
+   "name": "Glow wall stars",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     2.4,
+     -4.1
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "941b0c4c8edf422eb49d864e6cf6c5fe",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16769704,
+     "intensity": 2.0,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 6.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-sconce-left--2",
+   "name": "Glow sconce left -2",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.3,
+     2.4,
+     -2.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "f414014f94eb450cbccc67f14dcd1e60",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16770744,
+     "intensity": 1.6,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 4.5,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-sconce-left-2",
+   "name": "Glow sconce left 2",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -7.3,
+     2.4,
+     2.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "6e6a85c7e89748d3a385fb4a77f372d0",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16770744,
+     "intensity": 1.6,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 4.5,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-sconce-right--2",
+   "name": "Glow sconce right -2",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.3,
+     2.4,
+     -2.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "578d69840a844a78a9bce38564c8a66e",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16770744,
+     "intensity": 1.6,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 4.5,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-sconce-right-2",
+   "name": "Glow sconce right 2",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.3,
+     2.4,
+     2.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "0a8bd174687f48559b3c32b196d61d12",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16770744,
+     "intensity": 1.6,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 4.5,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-floor-lamp",
+   "name": "Glow floor lamp",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     5.5,
+     2.1,
+     -3.4
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "566eedbd044a4cb4a3b0cd8d33e36c10",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16773320,
+     "intensity": 2.5,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 5.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-table-star",
+   "name": "Glow table star",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.1,
+     1.3,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "2f7e1c4636de4cc0844b886c26c3f5ea",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16769184,
+     "intensity": 1.5,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 3.5,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "glow-shop",
+   "name": "Glow shop",
+   "parent": "lights",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -5.6,
+     3.0,
+     -1.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "Light",
+     "id": "f1c612cb0bd24e81926608b647b60d7f",
+     "kind": "point",
+     "mode": "stationary",
+     "color": 16769712,
+     "intensity": 2.0,
+     "groundColor": 14213877,
+     "target": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "distance": 5.0,
+     "decay": 1.5,
+     "angle": 0.6,
+     "penumbra": 0.6,
+     "castShadow": false,
+     "shadowMapSize": 1024,
+     "shadowBias": 0.0,
+     "normalBias": 0.03
+    }
+   ]
+  },
+  {
+   "id": "player-spawn",
+   "name": "Player spawn",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     2.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": []
+  },
+  {
+   "id": "walking",
+   "name": "Walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": []
+  },
+  {
+   "id": "walk-area",
+   "name": "Walk area",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     0.15
     ],
     "rotation": [
      0.0,
@@ -1475,7 +3351,7 @@
         "optional": false,
         "list": false
        },
-       "value": 17.2
+       "value": 14.8
       },
       {
        "name": "depth",
@@ -1484,9 +3360,523 @@
         "optional": false,
         "list": false
        },
-       "value": 13.0
+       "value": 9.3
       }
      ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-1",
+   "name": "Walk block shop",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -5.75,
+     0.0,
+     -1.5499999999999998
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-1",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 3.6999999999999997
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.7
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-2",
+   "name": "Walk block display shelf",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -6.949999999999999,
+     0.0,
+     0.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-2",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.2999999999999998
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-3",
+   "name": "Walk block planter 1",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     -6.75,
+     0.0,
+     3.5
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-3",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.6999999999999993
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.5999999999999996
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-4",
+   "name": "Walk block sofa",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     5.65,
+     0.0,
+     -1.5
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-4",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 3.8999999999999995
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.5999999999999999
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-5",
+   "name": "Walk block coffee table",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     5.449999999999999,
+     0.0,
+     0.55
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-5",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 2.7
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 2.3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-6",
+   "name": "Walk block side table",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     7.1,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-6",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.0
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-7",
+   "name": "Walk block bench",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     5.3,
+     0.0,
+     3.4
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-7",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 3.0
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-8",
+   "name": "Walk block planter 2",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     4.0,
+     0.0,
+     -3.8
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-8",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.8000000000000003
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 2.0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "walk-block-9",
+   "name": "Walk block floor lamp",
+   "parent": "walking",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     6.15,
+     0.0,
+     -3.9
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "LuaScript",
+     "id": "walk-block-9",
+     "script": "asset:59a52079-f391-42ef-816b-bc465cba6995",
+     "enabled": true,
+     "properties": [
+      {
+       "name": "width",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.1000000000000005
+      },
+      {
+       "name": "depth",
+       "type": {
+        "kind": "number",
+        "optional": false,
+        "list": false
+       },
+       "value": 1.7999999999999998
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cloud-base",
+   "name": "Cloud base",
+   "parent": "room",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": [
+    {
+     "type": "MeshRenderer",
+     "id": "4e5a48da1e2d445c8533db13c525c154",
+     "materials": {},
+     "source": "model",
+     "model": "asset:f752bb29-b0ec-465f-b84b-1941389edd04",
+     "hide": "",
+     "overlay": "",
+     "overlayMetres": 1.0,
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "castShadow": false,
+     "receiveShadow": true,
+     "static": true,
+     "lightmapScale": 1.0,
+     "fades": true
     }
    ]
   }
