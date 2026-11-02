@@ -21,6 +21,12 @@
 --                     PAUSED, paused  |  RESULTS, results  |  MOVING
 --                     GAME, gameId, ...  (the current mini-game's own messages)
 -- A paused player goes back to a lobby when the current mini-game ends.
+--
+-- Admins (account ids in the server's startup settings; server/Admins), in
+-- either place:
+--   client -> server: LINEUP, includedIds  (which mini-games cycles play)
+--   server -> client: ADMIN, lineup  (to admins only: on arrival, on change and
+--                     as the cycle moves on)
 local types = require("@moonbase/types")
 local value = require("@moonbase/value")
 local Movement = require("@moonbase/movement")
@@ -39,6 +45,8 @@ Net.PAUSED = "paused"
 Net.ROUND = "round"
 Net.RESULTS = "results"
 Net.GAME = "game"
+Net.ADMIN = "admin"
+Net.LINEUP = "lineup"
 
 Net.MAX_OUTFIT = 200 -- variation ids per outfit
 Net.MAX_NAME = 64 -- bytes of a name in leaderboard and results messages
@@ -59,6 +67,9 @@ export type Row = { player: number, name: string, starlights: number }
 -- The top players, and where you stand (nil before your first Starlight).
 export type Board = { top: {Row}, rank: number?, mine: number }
 export type Results = { game: string, rows: {Row} }
+-- Which mini-games cycles play (Games ids, in Games order; never empty), and
+-- in a cycle the one on now and the one after it.
+export type Lineup = { included: {string}, current: string?, upNext: string? }
 
 function Net.id(v: unknown): number?
 	if type(v) ~= "number" or v ~= math.floor(v) then return nil end
@@ -199,6 +210,48 @@ function Net.results(v: unknown): Results?
 	local game, rows = r.game, readRows(r.rows, Net.MAX_RESULTS)
 	if type(game) ~= "string" or #game == 0 or #game > 64 or not rows then return nil end
 	return { game = game, rows = rows }
+end
+
+local GAME_ID_MAX = 64
+
+local function gameId(v: unknown): string?
+	return if type(v) == "string" and #v > 0 and #v <= GAME_ID_MAX then v else nil
+end
+
+-- Mini-game ids: a dense list of up to [limit] distinct ids, or nil.
+function Net.gameIds(v: unknown, limit: number): {string}?
+	local items = record(v)
+	if not items or #items > limit then return nil end
+	local out: {string} = {}
+	local seen: {[string]: boolean} = {}
+	local count = 0
+	for key, item in items do
+		local index, id = integer(key, 1, #items), gameId(item)
+		if not index or not id or seen[id] then return nil end
+		seen[id] = true
+		out[index] = id
+		count += 1
+	end
+	return if count == #items then out else nil
+end
+
+function Net.lineupValue(lineup: Lineup): {[string]: types.Value}
+	local ids: {types.Value} = {}
+	for i, id in lineup.included do ids[i] = id end
+	local out: {[string]: types.Value} = { included = value.array(ids) }
+	if lineup.current then out.current = lineup.current end
+	if lineup.upNext then out.upNext = lineup.upNext end
+	return out
+end
+
+function Net.lineup(v: unknown): Lineup?
+	local r = record(v)
+	if not r then return nil end
+	local included = Net.gameIds(r.included, 64)
+	local current = if r.current == nil then nil else gameId(r.current)
+	local upNext = if r.upNext == nil then nil else gameId(r.upNext)
+	if not included or #included == 0 or (r.current ~= nil and not current) or (r.upNext ~= nil and not upNext) then return nil end
+	return { included = included, current = current, upNext = upNext }
 end
 
 -- A Starlights total; nil for anything else.

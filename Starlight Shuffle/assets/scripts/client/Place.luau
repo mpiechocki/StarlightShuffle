@@ -3,7 +3,8 @@
 -- Where this player is and what it is doing, for the HUD: the place (lobby or
 -- cycle, from HELLO), their lifetime Starlights, the cycle's current round with
 -- its countdown, whether they paused, the last results, the leaderboard and
--- whether a move between places is under way or failed. It routes the current
+-- whether a move between places is under way or failed; for admins, the
+-- mini-game lineup and whether its panel is open. It routes the current
 -- mini-game's messages to its client module (client/Games). A transfer keeps
 -- this VM, so `onTransferred` hears it and everything instance-specific resets.
 -- Listeners hear every change.
@@ -11,6 +12,7 @@ local client = require("@moonbase/client")
 local game = require("@moonbase/game")
 local engine = require("@moonbase/engine")
 local types = require("@moonbase/types")
+local value = require("@moonbase/value")
 local Net = require("../shared/Net")
 local Games = require("../shared/Games")
 local Minigame = require("./Minigame")
@@ -28,6 +30,8 @@ type Fields = {
 	paused: boolean,
 	results: Net.Results?,
 	board: Net.Board?, boardOpen: boolean,
+	-- Admins only (ADMIN): which mini-games cycles play, and its panel.
+	lineup: Net.Lineup?, lineupOpen: boolean,
 	moving: boolean, failed: Net.Reason?, failedAt: number,
 	connection: string,
 	minigame: Minigame.Minigame?, minigameId: string?,
@@ -82,13 +86,14 @@ local function reset(self: Controller)
 	closeMinigame(self)
 	self.place, self.round, self.results, self.board = nil, nil, nil, nil
 	self.boardOpen, self.paused, self.moving, self.failed = false, false, false, nil
+	self.lineup, self.lineupOpen = nil, false
 	self.endsAt, self.shownSeconds = 0, -1
 end
 
 function Place.new(): Controller
 	local self = setmetatable({
 		place = nil, session = nil, starlights = nil, round = nil, endsAt = 0, paused = false, results = nil,
-		board = nil, boardOpen = false, moving = false, failed = nil, failedAt = 0,
+		board = nil, boardOpen = false, lineup = nil, lineupOpen = false, moving = false, failed = nil, failedAt = 0,
 		connection = "offline", minigame = nil, minigameId = nil, scene = nil, listeners = {},
 		onTransferred = nil, unsubscribe = nil, unwatch = nil, shownSeconds = -1,
 	} :: Fields, Place)
@@ -114,6 +119,9 @@ function Place.new(): Controller
 		elseif kind == Net.LEADERBOARD then
 			local board = Net.board(a)
 			if board then self.board = board; changed(self) end
+		elseif kind == Net.ADMIN then
+			local lineup = Net.lineup(a)
+			if lineup then self.lineup = lineup; changed(self) end
 		elseif kind == Net.MOVING then
 			self.moving, self.failed = true, nil
 			changed(self)
@@ -182,6 +190,45 @@ function Place.openBoard(self: Controller, open: boolean)
 	self.boardOpen = open
 	-- A fresh board each time it opens; the panel shows a spinner until it comes.
 	if open then self.board = nil; client.notifyServer(Net.LEADERBOARD) end
+	changed(self)
+end
+
+-- Admins: opens or closes the lineup panel.
+function Place.openLineup(self: Controller, open: boolean)
+	self.lineupOpen = open and self.lineup ~= nil
+	changed(self)
+end
+
+-- Admins: includes or leaves out mini-game [id]; at least one stays in. Shown
+-- at once; the server's ADMIN confirms it.
+function Place.setIncluded(self: Controller, id: string, on: boolean)
+	local lineup = self.lineup
+	if not lineup or not Games.get(id) then return end
+	local wanted: {[string]: boolean} = {}
+	for _, included in lineup.included do wanted[included] = true end
+	wanted[id] = on
+	local ids: {string} = {}
+	for _, info in Games.list do
+		if wanted[info.id] then table.insert(ids, info.id) end
+	end
+	self:setLineup(ids)
+end
+
+-- Admins: includes every mini-game.
+function Place.includeAll(self: Controller)
+	local ids: {string} = {}
+	for _, info in Games.list do table.insert(ids, info.id) end
+	self:setLineup(ids)
+end
+
+-- Admins: the included mini-game ids, in Games order (not empty).
+function Place.setLineup(self: Controller, ids: {string})
+	local lineup = self.lineup
+	if not lineup or #ids == 0 then return end
+	self.lineup = { included = ids, current = lineup.current, upNext = lineup.upNext }
+	local values: {types.Value} = {}
+	for i, id in ids do values[i] = id end
+	client.notifyServer(Net.LINEUP, value.array(values))
 	changed(self)
 end
 

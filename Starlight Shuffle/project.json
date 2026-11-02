@@ -31,7 +31,11 @@
         }
       ]
     },
-    "startup": {},
+    "startup": {
+      "admins": [
+        22919001
+      ]
+    },
     "hosting": {
       "experienceId": "",
       "compatibilityVersion": "",

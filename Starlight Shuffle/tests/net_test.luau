@@ -6,11 +6,11 @@ local Net = require("@project/shared/Net")
 local Games = require("@project/shared/Games")
 
 test.unit("rounds survive the wire and bad ones are refused", function(t)
-	local round = Net.round(Net.roundValue({ phase = "playing", game = "minigame_1", round = 3, remaining = 12.345 }))
+	local round = Net.round(Net.roundValue({ phase = "playing", game = "lucky_shot", round = 3, remaining = 12.345 }))
 	t:truthy(round ~= nil)
 	if round then
 		t:equal(round.phase, "playing")
-		t:equal(round.game, "minigame_1")
+		t:equal(round.game, "lucky_shot")
 		t:equal(round.round, 3)
 		t:equal(round.remaining, 12.35)
 	end

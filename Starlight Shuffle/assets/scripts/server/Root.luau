@@ -10,6 +10,8 @@
 -- here from server/People, and keep lifetime Starlights in server/Starlights.
 -- Arrivals hear HELLO (who they are, which place) and their Starlights total.
 -- A place with nobody in it stops itself after a grace (server/Travel).
+-- Admins (server/Admins) hear and set the mini-game lineup in either place
+-- (server/Lineup).
 local server = require("@moonbase/server")
 local scenes = require("@moonbase/scene")
 local types = require("@moonbase/types")
@@ -20,6 +22,8 @@ local Starlights = require("./Starlights")
 local Lobby = require("./Lobby")
 local Cycle = require("./Cycle")
 local Travel = require("./Travel")
+local Admins = require("./Admins")
+local Lineup = require("./Lineup")
 
 -- What runs this place: server/Lobby or server/Cycle.
 type Mode = {
@@ -53,9 +57,16 @@ return server.defineScript({
 			server.notifyPlayers({player}, Net.STARLIGHTS, count)
 		end
 		local mode: Mode
+		-- The admins' lineup of mini-games, with what this cycle plays now and next.
+		local lineup = Lineup.new(Admins.new(server.startup), function(): (string?, string?)
+			if cycle then return cycle.queue() end
+			return nil, nil
+		end)
+		lineup.refresh()
 		if place == "cycle" then
 			local running = Cycle.new({ arena = world, starlights = starlights, name = people.name,
-				identity = people.identity, total = total })
+				identity = people.identity, total = total, lineup = lineup.included,
+				refreshLineup = function() lineup.refresh() end, moved = lineup.notify })
 			cycle = running
 			mode = running
 		else
@@ -71,10 +82,12 @@ return server.defineScript({
 				if count and player.isActive then total(player, count) end
 			end)
 			mode.added(player)
+			lineup.added(player)
 			idle()
 		end))
 		table.insert(cancels, server.onPlayerRemoved(function(player: server.Player, _reason: string)
 			mode.removed(player)
+			lineup.removed(player)
 			people.removed(player)
 			idle()
 		end))
@@ -84,7 +97,7 @@ return server.defineScript({
 		table.insert(cancels, server.onMessage(function(player: server.Player, kind: unknown, ...: unknown)
 			if not player.isActive then return end
 			local a = ...
-			if people.receive(player, kind, a) or world.receive(player, kind, a) then return end
+			if people.receive(player, kind, a) or world.receive(player, kind, a) or lineup.receive(player, kind, ...) then return end
 			mode.receive(player, kind, ...)
 		end))
 	end,

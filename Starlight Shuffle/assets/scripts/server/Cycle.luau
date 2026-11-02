@@ -12,6 +12,10 @@
 -- (PAUSE) marks a player to leave: when the current mini-game's results end,
 -- they go back to the lobby they came from (or any lobby with room). With
 -- nobody here the cycle waits, and server/Root stops it after a grace.
+--
+-- Only the mini-games in the admins' lineup (server/Lineup) are played; the
+-- cycle reads it again while gathering and during each results, and tells
+-- the admins here whenever it moves on.
 local server = require("@moonbase/server")
 local types = require("@moonbase/types")
 local Task = require("@moonbase/task")
@@ -36,12 +40,19 @@ export type Host = {
 	identity: (session: number) -> Net.Identity?,
 	-- Tells [player] their new lifetime total.
 	total: (player: server.Player, total: number) -> (),
+	-- The admins' lineup: the included mini-game ids; reading it again; telling
+	-- the admins here what is on.
+	lineup: () -> {string},
+	refreshLineup: () -> (),
+	moved: () -> (),
 }
 export type Cycle = {
 	added: (player: server.Player) -> (),
 	removed: (player: server.Player) -> (),
 	receive: (player: server.Player, kind: unknown, ...unknown) -> boolean,
 	update: (dt: number) -> (),
+	-- The mini-game on now (nil while waiting) and the one that would follow it.
+	queue: () -> (string?, string?),
 	dispose: () -> (),
 }
 
@@ -138,12 +149,7 @@ function Cycle.new(host: Host): Cycle
 	local function intro()
 		-- The next mini-game this many players can play (a mini-game may need
 		-- more than are here: it is skipped this time round).
-		local count = #present()
-		local nextGame, nextIndex = Games.after(index)
-		for _ = 1, #Games.list do
-			if (nextGame.minPlayers or 1) <= count then break end
-			nextGame, nextIndex = Games.after(nextIndex)
-		end
+		local nextGame, nextIndex = Games.pick(index, host.lineup(), #present())
 		index, game, round = nextIndex, nextGame, round + 1
 		table.clear(earned)
 		phase, endsAt = "intro", server.clock() + (nextGame.intro or Games.INTRO)
@@ -153,6 +159,7 @@ function Cycle.new(host: Host): Cycle
 		-- Announced first, so clients have the mini-game's module ready for
 		-- whatever it sends as it starts.
 		broadcast()
+		host.moved()
 		local module = Modules[nextGame.id]
 		if module then
 			local ok, made = pcall(module.new, context(nextGame))
@@ -207,6 +214,7 @@ function Cycle.new(host: Host): Cycle
 		local current = assert(game)
 		call("finish")
 		phase, endsAt = "results", server.clock() + RESULTS
+		host.refreshLineup()
 		local rows: {Net.Row} = {}
 		local awards: {Starlights.Award} = {}
 		local bySession: {[number]: server.Player} = {}
@@ -244,6 +252,7 @@ function Cycle.new(host: Host): Cycle
 		running, game = nil, nil
 		phase, endsAt = "waiting", 0
 		broadcast()
+		host.moved()
 	end
 
 	local function anyone(): boolean
@@ -261,7 +270,8 @@ function Cycle.new(host: Host): Cycle
 					endsAt = server.clock() + GATHER
 					-- (Everyone the gather brings counts; a game too big for them is
 					-- skipped at the intro, which then loads its own scene.)
-					local coming = Games.after(index)
+					host.refreshLineup()
+					local coming = Games.pick(index, host.lineup(), #present())
 					host.arena.load(coming.scene)
 					loaded = coming.scene
 				end
@@ -318,6 +328,11 @@ function Cycle.new(host: Host): Cycle
 				running = nil
 				if anyone() then intro() else wait() end
 			end
+		end,
+		queue = function(): (string?, string?)
+			local current = if phase ~= "waiting" and game then game.id else nil
+			local upNext = Games.pick(index, host.lineup(), math.max(1, #present()))
+			return current, upNext.id
 		end,
 		dispose = function()
 			call("dispose")

@@ -10,6 +10,8 @@
 -- the Pause/Play button: paused, you go back to the lobby when this mini-game
 -- ends. The announcement card shows before each mini-game, the results card
 -- after it, and the mini-game's own HUD (if any) under all of it.
+-- Admins (either place): a lineup button (in the lobby's head; in a cycle
+-- under the Starlights pill) opens widgets/Lineup.
 local w = require("@flutter/widgets")
 local p = require("@flutter/painting")
 local r = require("@flutter/rendering")
@@ -19,6 +21,7 @@ local Games = require("../shared/Games")
 local Place = require("../client/Place")
 local Style = require("./Style")
 local Leaderboard = require("./Leaderboard")
+local Lineup = require("./Lineup")
 
 type Props = { read place: Place.Controller }
 type Fields = { unlisten: (() -> ())? }
@@ -122,6 +125,25 @@ local function lobbyHint(place: Place.Controller): w.Widget?
 	}}), p.EdgeInsets.symmetric({horizontal = 16, vertical = 10}), 999)
 end
 
+-- The admins' lineup button: in the lobby's head, before the leaderboard.
+local function adminButton(place: Place.Controller, head: {w.Widget})
+	if not place.lineup then return end
+	table.insert(head, Style.roundButton(material.tune_rounded, function() place:openLineup(true) end, place.lineupOpen, "lineup"))
+	table.insert(head, w.SizedBox({width = 10}))
+end
+
+-- In a cycle, a smaller one under the Starlights pill: the mini-games keep
+-- that edge clear of their own top panels.
+local function cycleAdminButton(place: Place.Controller): w.Widget
+	return w.SafeArea({child = w.Padding({padding = p.EdgeInsets.only({top = 12 + 52 + 8, left = 12 + 4}),
+		child = w.Align({alignment = p.Alignment.topLeft, child = w.GestureDetector({key = w.ValueKey({value = "lineup"}),
+			onTap = function() place:openLineup(true) end,
+			child = w.Container({width = 38, height = 38,
+				decoration = p.BoxDecoration({color = if place.lineupOpen then Style.GOLD else Style.SURFACE, shape = p.BoxShape.circle,
+					border = p.Border.all({color = if place.lineupOpen then Style.GOLD else Style.LINE, width = 1.5})}),
+				child = w.Icon({icon = material.tune_rounded, size = 21, color = if place.lineupOpen then Style.INK else Style.WHITE})})})})})})
+end
+
 local function build(place: Place.Controller): w.Widget
 	local layers: {w.Widget} = {}
 	local inCycle = place.place == "cycle"
@@ -150,11 +172,13 @@ local function build(place: Place.Controller): w.Widget
 		table.insert(head, w.Expanded({child = cycleHead(place)}))
 	elseif place.place == "lobby" then
 		table.insert(head, w.Spacer({}))
+		adminButton(place, head)
 		table.insert(head, Style.roundButton(material.emoji_events_rounded, function() place:openBoard(true) end, false, "leaderboard"))
 	end
 	table.insert(layers, w.SafeArea({child = w.Padding({padding = p.EdgeInsets.all(12),
 		child = w.Align({alignment = p.Alignment.topLeft, child = w.Row({
 			crossAxisAlignment = w.CrossAxisAlignment.center, children = head})})})}))
+	if inCycle and place.lineup then table.insert(layers, cycleAdminButton(place)) end
 	local center = if inCycle and not place:minigameOwnsHud() then introCard(place) or resultsCard(place) else nil
 	if center then
 		table.insert(layers, w.IgnorePointer({child = w.Center({child = w.Padding({padding = p.EdgeInsets.all(24), child = center})})}))
@@ -166,6 +190,9 @@ local function build(place: Place.Controller): w.Widget
 	end
 	if place.place == "lobby" and place.boardOpen then
 		table.insert(layers, Leaderboard({place = place}))
+	end
+	if place.lineupOpen and place.lineup then
+		table.insert(layers, Lineup({place = place}))
 	end
 	return w.Stack({fit = w.StackFit.expand, children = layers})
 end

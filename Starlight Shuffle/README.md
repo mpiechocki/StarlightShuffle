@@ -47,6 +47,29 @@ lists the top 20 and your rank.
 Local Play starts each run with an empty datastore, so totals reset between Play runs
 there; within a run they carry across moves between places.
 
+## Admins and the mini-game lineup
+
+Admins get a lineup button (sliders icon): in the lobby next to the leaderboard, in a
+cycle under the Starlights pill. It opens a panel listing every mini-game in cycle
+order, the one on now and the one up next marked, each with a tick box. Cycles play
+only the ticked mini-games, in that order, from their next pick, in every cycle
+(at least one stays ticked; **Include all** restores the full cycle). A game that needs
+more players than are there is still skipped, unless only such games are ticked.
+
+- **Who is an admin:** the account ids under `admins` in the server's startup settings
+  (`project.json` → `server.startup`, editable in the editor's project settings). The
+  platform does not expose the world testers list to game scripts, so the testers' ids
+  go there by hand. It holds `22919001` (the editor account used for Play) for now.
+  Nobody else sees the button, and the server ignores lineup changes from non-admins.
+- **Where it lives:** `server/Lineup.luau` keeps it in `@moonbase/storage`, so one
+  change reaches every lobby and cycle. A cycle reads it again while gathering and
+  during each results. Nothing stored means every mini-game. Like Starlights, local
+  Play starts each run with it cleared.
+- **Code:** `server/Admins.luau`, `server/Lineup.luau`, `Games.pick` / `Games.included`
+  in `shared/Games.luau`, the ADMIN and LINEUP messages in `shared/Net.luau`, and
+  `widgets/Lineup.luau`. `tests/lineup_test.luau` covers picking, the admin list and the
+  message.
+
 ## Mini-games
 
 Each mini-game has:
@@ -79,8 +102,6 @@ The cycle plays, in order:
   played in waves until one player is left. See below.
 - **Pillow Fight** (`pillow_fight`, fifth): a two-minute free-for-all in rooms of three
   or four, with filler bots, one winner per room. See below.
-- `minigame_1`, `minigame_2`, `minigame_3`: blank. Players walk around a coloured
-  arena for 30 s, and everyone still there at the end earns 1 Starlight for taking part.
 
 An empty cycle waits 3 s after its first arrival before announcing a mini-game, so a
 group sent together all take part in it.

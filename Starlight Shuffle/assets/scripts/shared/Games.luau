@@ -27,9 +27,6 @@ local list: {Game} = {
 	-- Reveal, countdown and 120 s of play (it ends itself sooner with one room).
 	{ id = "pillow_fight", title = "Pillow Fight", blurb = "Aim, hold and throw. Red ! means dodge.",
 		scene = "scene:pillow_fight", duration = 127, intro = 15 },
-	{ id = "minigame_1", title = "Mini-game 1", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_1", duration = 30 },
-	{ id = "minigame_2", title = "Mini-game 2", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_2", duration = 30 },
-	{ id = "minigame_3", title = "Mini-game 3", blurb = "A blank mini-game. Walk around!", scene = "scene:minigame_3", duration = 30 },
 }
 
 local byId: {[string]: Game} = {}
@@ -49,5 +46,38 @@ return table.freeze({
 	after = function(index: number): (Game, number)
 		local nextIndex = index % #list + 1
 		return list[nextIndex], nextIndex
+	end,
+	-- The ids of [ids] that are mini-games, in list order; every id when none is.
+	-- (The admins' lineup: which mini-games cycles play.)
+	included = function(ids: {string}?): {string}
+		local wanted: {[string]: boolean} = {}
+		for _, id in ids or {} do wanted[id] = true end
+		local out: {string} = {}
+		for _, game in list do
+			if wanted[game.id] then table.insert(out, game.id) end
+		end
+		if #out == 0 then
+			for _, game in list do table.insert(out, game.id) end
+		end
+		return out
+	end,
+	-- What a cycle plays after the mini-game at [index] (0 before the first):
+	-- the next included one that [players] can play, looping; when no included
+	-- one takes that few players, the next included one anyway (an admin chose
+	-- it); and its index.
+	pick = function(index: number, included: {string}, players: number): (Game, number)
+		local allowed: {[string]: boolean} = {}
+		for _, id in included do allowed[id] = true end
+		local fallback: number? = nil
+		for step = 1, #list do
+			local at = (index + step - 1) % #list + 1
+			local game = list[at]
+			if allowed[game.id] then
+				if (game.minPlayers or 1) <= players then return game, at end
+				fallback = fallback or at
+			end
+		end
+		local at = fallback or (index % #list + 1)
+		return list[at], at
 	end,
 })
