@@ -135,7 +135,6 @@ export type View = {
 	-- countdown; `play`; `over`: play ended.
 	phase: "waiting" | "prep" | "play" | "over",
 	spectating: boolean,
-	clock: string,
 	pool: {Rules.Entry},
 	reference: {number}?,
 	cells: {number},
@@ -147,15 +146,15 @@ export type View = {
 	me: number?, -- our account id, once known
 }
 
+-- Where the round is (the cycle's timer in the head shows how long is left).
 local function status(view: View): w.Widget
-	local label = if view.phase == "prep" then "Starting in"
+	local label = if view.phase == "prep" then "Get ready"
 		elseif view.phase == "play" then (if view.done then "Finished!" elseif view.spectating then "Watching" else "Matching")
 		elseif view.phase == "over" then (if view.done then "Finished!" else "Time's up")
 		else "Head to Head"
 	return panel(w.Row({children = {
 		w.Expanded({child = caption(label)}),
-		text(view.clock, style(30, WHITE, ui.FontWeight.w900)),
-	}}), p.EdgeInsets.symmetric({horizontal = 18, vertical = 8}))
+	}}), p.EdgeInsets.symmetric({horizontal = 18, vertical = 14}))
 end
 
 local function instructions(view: View, height: number): w.Widget
@@ -285,7 +284,7 @@ local function podium(view: View): w.Widget?
 				w.SizedBox({height = 16}),
 				w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = rows}),
 				w.SizedBox({height = 6}),
-				text("Next mini-game in " .. view.nextIn, style(12, FAINT, ui.FontWeight.w700), ui.TextAlign.center),
+				text("Back to the lobby in " .. view.nextIn, style(12, FAINT, ui.FontWeight.w700), ui.TextAlign.center),
 			}}), p.EdgeInsets.fromLTRB(20, 18, 20, 16), true),
 		})})}),
 	}})

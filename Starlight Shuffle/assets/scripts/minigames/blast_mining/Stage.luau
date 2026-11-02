@@ -298,14 +298,14 @@ local function before(model: Model): w.Widget?
 	})
 end
 
--- The score pill: a small gem, our points and a ring for the round's progress.
+-- The score pill, under the cycle's head (whose timer is the time left): a
+-- small gem and our points.
 local function pill(model: Model): w.Widget?
 	local me = model.me
 	local now = model:now()
 	if not me or not model.ready or now < model.startsAt or model.over then return nil end
 	local miner = model.miners[me]
-	local progress = math.clamp((now - model.startsAt) / math.max(1, model.endsAt - model.startsAt), 0, 1)
-	return w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = 12}),
+	return w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = GameUi.HEAD}),
 		child = w.Container({
 			height = 40, padding = p.EdgeInsets.symmetric({horizontal = 12}),
 			decoration = p.BoxDecoration({color = GameUi.HUD, borderRadius = p.BorderRadius.circular(999),
@@ -314,13 +314,6 @@ local function pill(model: Model): w.Widget?
 				icon("gem", 22),
 				w.SizedBox({width = 6}),
 				w.Text({data = tostring(if miner then miner.score else 0), style = GameUi.style(17, GameUi.TEXT, ui.FontWeight.w900)}),
-				w.SizedBox({width = 10}),
-				w.CustomPaint({size = ui.Size({width = 18, height = 18}), painter = w.CallbackPainter({
-					onPaint = function(canvas: ui.Canvas, s: ui.Size)
-						local rect = ui.Rect.fromLTWH(1.5, 1.5, s.width - 3, s.height - 3)
-						canvas:drawArc(rect, 0, 2 * math.pi, false, Art.stroke(0xffffff, 0.22, 3))
-						canvas:drawArc(rect, -math.pi / 2, 2 * math.pi * (1 - progress), false, Art.stroke(0xf3d6ff, 0.95, 3))
-					end})}),
 			}}),
 		})})})
 end
@@ -347,7 +340,7 @@ local function results(model: Model): w.Widget?
 		summary = if mine then "You collected " .. mine.score .. (if mine.score == 1 then " point" else " points") .. " in the caverns."
 			else "Here's who mined the most.",
 		rows = rows,
-		footer = "Next mini-game in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
+		footer = "Back to the lobby in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
 	})
 end
 

@@ -20,6 +20,17 @@ test.unit("rounds survive the wire and bad ones are refused", function(t)
 	t:equal(Net.round("intro"), nil)
 end)
 
+test.unit("a break between mini-games names the one coming", function(t)
+	local round = Net.round(Net.roundValue({ phase = "break", game = "blast_mining", round = 2, remaining = Games.BREAK }))
+	t:truthy(round ~= nil)
+	if round then
+		t:equal(round.phase, "break")
+		t:equal(round.game, "blast_mining")
+		t:equal(round.remaining, Games.BREAK)
+	end
+	t:equal(Games.BREAK, 10)
+end)
+
 test.unit("leaderboards survive the wire and bad rows are refused", function(t)
 	local board = Net.board(Net.boardValue({ top = { { player = 7, name = "Ada", starlights = 12 } }, rank = 1, mine = 12 }))
 	t:truthy(board ~= nil)

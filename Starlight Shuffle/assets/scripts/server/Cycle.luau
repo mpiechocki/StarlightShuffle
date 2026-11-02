@@ -6,12 +6,15 @@
 --   intro (its scene loads, everyone lands in it and it is announced, for
 --   its `intro` seconds)
 --   -> playing (its duration) -> results (what everyone earned)
+--   -> break (Games.BREAK seconds back in the lobby scene, where the lobby chat is
+--   open, counting down to the next mini-game, already picked and named)
 --
--- and then the next one starts. Players who arrive join the mini-game under
--- way, unless it is already showing results. The HUD's Pause/Play button
--- (PAUSE) marks a player to leave: when the current mini-game's results end,
--- they go back to the lobby they came from (or any lobby with room). With
--- nobody here the cycle waits, and server/Root stops it after a grace.
+-- and then the next one's intro. Players who arrive join the mini-game under
+-- way, unless it is already showing results, or the break. The HUD's
+-- Pause/Play button (PAUSE) marks a player to leave: when the current
+-- mini-game's results end (or the break, for one who paused during it), they
+-- go back to the lobby they came from (or any lobby with room). With nobody
+-- here the cycle waits, and server/Root stops it after a grace.
 --
 -- Only the mini-games in the admins' lineup (server/Lineup) are played; the
 -- cycle reads it again while gathering and during each results, and tells
@@ -28,6 +31,7 @@ local Minigame = require("./Minigame")
 local Modules = require("./Games")
 
 local RESULTS = 7 -- seconds the results show
+local LOBBY = "scene:lobby"
 -- Seconds an empty cycle waits after its first arrival before announcing a
 -- mini-game, so a group sent together (who land one by one) all take part.
 local GATHER = 3
@@ -51,8 +55,10 @@ export type Cycle = {
 	removed: (player: server.Player) -> (),
 	receive: (player: server.Player, kind: unknown, ...unknown) -> boolean,
 	update: (dt: number) -> (),
-	-- The mini-game on now (nil while waiting) and the one that would follow it.
+	-- The mini-game on now (nil while waiting or on a break) and the one that
+	-- would follow it (on a break, the one announced).
 	queue: () -> (string?, string?),
+	phase: () -> Net.Phase,
 	dispose: () -> (),
 }
 
@@ -84,6 +90,8 @@ function Cycle.new(host: Host): Cycle
 	local playEnds = 0 -- server clock when play ends (or would)
 	local earned: {[number]: number} = {} -- this mini-game's Starlights by session
 	local loaded: string? = nil -- a scene loaded ahead of its intro, while gathering
+	-- The mini-game a break announced, and its index in Games.list: its intro plays it.
+	local upcoming: Games.Game?, upcomingIndex = nil, 0
 
 	local function roundValue(): types.Value
 		return Net.roundValue({ phase = phase, game = if game then game.id else nil, round = round,
@@ -147,9 +155,13 @@ function Cycle.new(host: Host): Cycle
 
 	-- The next mini-game: load its scene, announce it.
 	local function intro()
-		-- The next mini-game this many players can play (a mini-game may need
-		-- more than are here: it is skipped this time round).
+		-- The one the break announced, else the next mini-game this many
+		-- players can play (a mini-game may need more than are here: it is
+		-- skipped this time round).
 		local nextGame, nextIndex = Games.pick(index, host.lineup(), #present())
+		local announced = upcoming
+		if announced then nextGame, nextIndex = announced, upcomingIndex end
+		upcoming, upcomingIndex = nil, 0
 		index, game, round = nextIndex, nextGame, round + 1
 		table.clear(earned)
 		phase, endsAt = "intro", server.clock() + (nextGame.intro or Games.INTRO)
@@ -247,9 +259,22 @@ function Cycle.new(host: Host): Cycle
 		results()
 	end
 
+	-- Back to the lobby scene for a break, the next mini-game named.
+	local function rest()
+		local nextGame, nextIndex = Games.pick(index, host.lineup(), #present())
+		upcoming, upcomingIndex = nextGame, nextIndex
+		game = nextGame
+		phase, endsAt = "break", server.clock() + Games.BREAK
+		host.arena.load(LOBBY)
+		loaded = nil
+		broadcast()
+		host.moved()
+	end
+
 	local function wait()
 		call("dispose")
 		running, game = nil, nil
+		upcoming, upcomingIndex = nil, 0
 		phase, endsAt = "waiting", 0
 		broadcast()
 		host.moved()
@@ -326,14 +351,21 @@ function Cycle.new(host: Host): Cycle
 				sendOff()
 				call("dispose")
 				running = nil
+				if anyone() then rest() else wait() end
+			elseif phase == "break" then
+				-- Whoever paused during the break goes now, before the next one starts.
+				sendOff()
 				if anyone() then intro() else wait() end
 			end
 		end,
 		queue = function(): (string?, string?)
+			local announced = upcoming
+			if announced then return nil, announced.id end
 			local current = if phase ~= "waiting" and game then game.id else nil
 			local upNext = Games.pick(index, host.lineup(), math.max(1, #present()))
 			return current, upNext.id
 		end,
+		phase = function(): Net.Phase return phase end,
 		dispose = function()
 			call("dispose")
 			running = nil

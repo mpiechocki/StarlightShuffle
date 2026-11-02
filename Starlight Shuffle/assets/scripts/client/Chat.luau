@@ -314,6 +314,19 @@ function Chat.left(self: Controller, id: number)
 	self.typing[id], self.said[id] = nil, nil
 end
 
+-- The chat is put away (a cycle's break is over): bubbles and typing dots go,
+-- and if we were typing, we stop; the history stays for the next break.
+function Chat.quiet(self: Controller)
+	table.clear(self.said); table.clear(self.typing)
+	self.editedAt = nil
+	if self.typingSent then
+		self.typingSent = false
+		client.notifyServer(Net.TYPING, false)
+	end
+	self:pick(nil)
+	self.rulesNext = nil
+end
+
 -- Another server instance has its own chat and typists (or none, in a
 -- cycle): it starts empty.
 function Chat.reset(self: Controller)

@@ -111,7 +111,9 @@ function Place.new(): Controller
 			if not round then return end
 			self.round, self.endsAt = round, game.clock() + round.remaining
 			if round.phase == "intro" then self.results = nil end
-			if round.phase == "waiting" then openMinigame(self, nil, 0) else openMinigame(self, round.game, round.round) end
+			-- A break names the next mini-game, which opens with its intro.
+			if round.phase == "waiting" or round.phase == "break" then openMinigame(self, nil, 0)
+			else openMinigame(self, round.game, round.round) end
 			changed(self)
 		elseif kind == Net.PAUSED then
 			if type(a) == "boolean" then self.paused = a; changed(self) end
@@ -242,6 +244,23 @@ function Place.tap(self: Controller, x: number, y: number): boolean
 	return ok and taken == true
 end
 
+-- What the cycle's timer shows now: the mini-game's own clock, else its
+-- intro's and then its play's seconds; nil outside them.
+function Place.clock(self: Controller): Minigame.Clock?
+	local round, minigame = self.round, self.minigame
+	if self.place ~= "cycle" or not round or (round.phase ~= "intro" and round.phase ~= "playing") then return nil end
+	if minigame and minigame.clock then
+		local ok, own = pcall(minigame.clock)
+		if ok and own then return own end
+	end
+	local info = Games.get(round.game)
+	if not info then return nil end
+	if round.phase == "intro" then
+		return { starting = true, seconds = self:remaining(), total = info.intro or Games.INTRO }
+	end
+	return { starting = false, seconds = self:remaining(), total = info.duration }
+end
+
 -- Whether the current mini-game draws its own status and results.
 function Place.minigameOwnsHud(self: Controller): boolean
 	local minigame = self.minigame
@@ -269,8 +288,11 @@ function Place.update(self: Controller, dt: number)
 		local ok, err = pcall(minigame.update, dt)
 		if not ok then print("Mini-game update failed: " .. tostring(err)) end
 	end
-	-- The countdown rebuilds the HUD once a second; a failed move clears itself.
-	local seconds = if self.round then math.ceil(self:remaining()) else -1
+	-- The countdown (and the timer, on its own clock) rebuilds the HUD once a
+	-- second; a failed move clears itself.
+	local clock = self:clock()
+	local seconds = if clock then math.ceil(clock.seconds) + (if clock.starting then 0.5 else 0)
+		elseif self.round then math.ceil(self:remaining()) else -1
 	local dirty = seconds ~= self.shownSeconds
 	self.shownSeconds = seconds
 	if self.failed and game.clock() - self.failedAt > FAILED_FOR then

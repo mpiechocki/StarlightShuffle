@@ -287,10 +287,12 @@ local function clockText(seconds: number): string
 	return (string.format("%d:%02d", whole // 60, whole % 60))
 end
 
--- The top panel's label, time and 0..1 of the span left.
+-- The top panel's label, time and 0..1 of the span left: the star's fuse,
+-- a game rule (the cycle's timer in the head is the time left, and counts
+-- down to the start).
 local function timer(model: Model, now: number): (string, string, number)
 	if model.phase == "countdown" then
-		return "Starting in", clockText(model.startsAt - now), math.clamp((model.startsAt - now) / C.PREPARATION, 0, 1)
+		return "Star bursts in", "—", 1
 	elseif model.phase == "playing" then
 		local span = Rules.waveDuration(model.wave, 1)
 		return "Star bursts in", clockText(model.burstAt - now), math.clamp((model.burstAt - now) / span, 0, 1)
@@ -300,14 +302,15 @@ local function timer(model: Model, now: number): (string, string, number)
 	return "Round over", "—", 0
 end
 
--- The top: time to the burst (or start / next stars) and who is still in.
+-- The top, under the cycle's head: time to the burst (or the next stars) and
+-- who is still in.
 local TopHud = frameWidget("StarPassTop", function(model: Model, _layout: Layout): w.Widget
 	local now = model:now()
 	local label, shown, fraction = timer(model, now)
 	local alive = 0
 	for _, pl in model.players do if pl.alive then alive += 1 end end
 	local danger = model.phase == "playing" and model.burstAt - now < 2.4
-	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = 8}),
+	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = GameUi.HEAD}),
 		child = w.Row({mainAxisSize = w.MainAxisSize.min, children = {
 			GameUi.hud(w.SizedBox({width = 96, child = w.Column({mainAxisSize = w.MainAxisSize.min, children = {
 				GameUi.overline(label),
@@ -433,7 +436,7 @@ end)
 local Banner = frameWidget("StarPassBanner", function(model: Model, _layout: Layout): w.Widget
 	local line = status(model)
 	if not line or model.phase == "countdown" then return w.SizedBox.shrink({}) end
-	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = 86}),
+	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = GameUi.HEAD + 66}),
 		child = w.Text({data = line, textAlign = ui.TextAlign.center, style = p.TextStyle({fontFamily = fonts.lato, fontSize = 18,
 			fontWeight = ui.FontWeight.w800, fontStyle = ui.FontStyle.italic, color = GameUi.TEXT,
 			shadows = {ui.Shadow({color = color(0x99473655), blurRadius = 6, offset = ui.Offset({dx = 0, dy = 1})})}})})})})})
@@ -538,7 +541,7 @@ local function results(model: Model): w.Widget?
 			elseif mine.place == 1 then "You're the last star standing!"
 			else "You placed #" .. mine.place .. " of " .. #standings .. ". Top three win.",
 		rows = rows,
-		footer = "Next mini-game in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
+		footer = "Back to the lobby in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
 	})
 end
 

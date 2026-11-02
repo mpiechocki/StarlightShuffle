@@ -42,15 +42,30 @@ bake again (**Baked lighting** in the editor, or `bake_lighting` over MCP).
 
 **Cycle.** Plays `shared/Games.luau` in order and loops. Each mini-game goes:
 *intro* (its scene loads, everyone lands in it, "Up next" shows for 5 s) → *playing*
-(its `duration`) → *results* (everyone's Starlights for it, 7 s). Arrivals join the
-mini-game under way, unless it is already showing results. The HUD's head shows the
-mini-game, its phase and time left, and the **Pause/Play** button: pressing Pause
-marks you to leave, and when the current mini-game's results end you go back to the
-lobby you came from (or any lobby with room). Pressing Play before then keeps you in.
+(its `duration`) → *results* (everyone's Starlights for it, 7 s) → *break*
+(`Games.BREAK`, 10 s back in the lobby scene, where the lobby chat is open). The
+break picks and names the next mini-game: the HUD's head reads "Up next: …" with
+"Starts in 0:08 · chat until then" and a draining bar, and a big 3, 2, 1 ends it.
+The break runs on the cycle's own server (it is not a transfer to a lobby), so you
+chat with the players you are playing with. Arrivals join the mini-game under way,
+unless it is already showing results, or the break.
 
-**Lobby chat.** The lobby has a chat like Sky Lounge's, ported from it; the
-mini-game cycle has none (the chat's widgets unmount when you leave the lobby, and
-the cycle's server ignores chat). The chat bar along the bottom (`widgets/ChatBar`)
+**Timer.** Before and during every mini-game the middle of the HUD's head is the
+cycle's timer, the same for all of them: "Starts in" through the intro, then "Time
+left", with a draining bar, amber for the last 10 s (`widgets/Hud`, from
+`client/Place.clock`). A mini-game whose play is not the cycle's playing phase gives
+its own clock (`clock` in `client/Minigame`; Pillow Fight counts down to and through
+its 120 s battle). Mini-games show no time of their own: their top panels (scores,
+Star Pass's burst fuse) sit below the head, from `GameUi.HEAD`.
+
+**Pause/Play.** In the head's right: pressing Pause marks you to leave, and the
+button turns into a gold **Stay**. When the current mini-game's results end (or the
+break, if you paused during it) you go back to the lobby you came from (or any lobby
+with room). Pressing Stay before then keeps you in.
+
+**Lobby chat.** The lobby has a chat like Sky Lounge's, ported from it. The
+mini-game cycle opens it only during its breaks (`widgets/LobbyChat`; the cycle's
+server drops chat at other times, and the chat goes quiet as a break ends). The chat bar along the bottom (`widgets/ChatBar`)
 sends messages with the app's custom emoji (`:name:` codes, `widgets/EmojiPicker`),
 and its bubble button opens the recent history; the latest lines also show along the
 top left under the head (`widgets/ChatFeed`). Speech bubbles and typing dots float over
@@ -121,7 +136,8 @@ happens during play and calls `context.award(player, n)`.
 
 A mini-game's `shared/Games.luau` row may set `intro` (seconds announced before play,
 default 5) and `minPlayers`: the cycle skips that game in rounds with fewer players. Its client module may set `ownHud` (it draws its own status and results; the
-cycle's HUD keeps only Starlights and Pause/Play) and `fixedCamera` (the camera holds
+cycle's HUD keeps only Starlights, the timer and Pause/Play), `clock` (its own
+clock for the timer) and `fixedCamera` (the camera holds
 the scene's authored view instead of following the avatar).
 
 The cycle plays, in order:
@@ -278,7 +294,7 @@ catch, pass, burst and a quiet loop.
 
 - **Match.** Everyone in the cycle when it is announced competes, seated by account id;
   later arrivals watch. After the shared 10 s countdown, waves run until one player is
-  left; there is no match clock.
+  left; there is no match clock (the cycle's timer shows the 300 s most it can take).
 - **Waves.** Each wave gives `min(5, ceil(alive / 6), alive − 1)` stars to distinct
   survivors, chosen by a server shuffle. All of them burst at one `burstAt`:
   `max(6, 10.5 − 0.35 × wave) + random(0, 1.3)` seconds after the wave starts.

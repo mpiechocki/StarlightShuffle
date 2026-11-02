@@ -32,6 +32,8 @@
 --   server -> client: ROUND, round  (the phase, game and time left; again on change)
 --                     PAUSED, paused  |  RESULTS, results  |  MOVING
 --                     GAME, gameId, ...  (the current mini-game's own messages)
+-- Between mini-games the cycle takes a break in the lobby scene, where the
+-- lobby chat (SAY, TYPING) is open.
 -- A paused player goes back to a lobby when the current mini-game ends.
 --
 -- Admins (account ids in the server's startup settings; server/Admins), in
@@ -78,8 +80,10 @@ local MAX_ID = 9007199254740991
 export type Place = "lobby" | "cycle"
 export type Reason = "busy" | "full" | "unavailable"
 -- `intro`: the next mini-game is about to start; `playing`; `results`: it
--- ended and shows what everyone earned; `waiting`: nobody to play with yet.
-export type Phase = "waiting" | "intro" | "playing" | "results"
+-- ended and shows what everyone earned; `break`: a few seconds back in the
+-- lobby scene, chatting, before the next one (`game` is the one coming);
+-- `waiting`: nobody to play with yet.
+export type Phase = "waiting" | "intro" | "playing" | "results" | "break"
 -- What a cycle is doing: `game` is a Games id, `remaining` the seconds left in
 -- this phase as of sending, `round` counts mini-games played here.
 export type Round = { phase: Phase, game: string?, round: number, remaining: number }
@@ -152,7 +156,7 @@ function Net.reason(v: unknown): Reason?
 	return if v == "busy" or v == "full" or v == "unavailable" then v :: Reason else nil
 end
 
-local PHASES: {[string]: boolean} = { waiting = true, intro = true, playing = true, results = true }
+local PHASES: {[string]: boolean} = { waiting = true, intro = true, playing = true, results = true, ["break"] = true }
 
 function Net.roundValue(round: Round): {[string]: types.Value}
 	local out: {[string]: types.Value} = { phase = round.phase, round = round.round,

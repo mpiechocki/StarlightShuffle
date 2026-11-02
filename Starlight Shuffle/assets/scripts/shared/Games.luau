@@ -39,6 +39,8 @@ end
 
 return table.freeze({
 	INTRO = 5,
+	-- Seconds a cycle spends back in the lobby scene between mini-games.
+	BREAK = 10,
 	list = table.freeze(list),
 	-- The mini-game with [id], or nil.
 	get = function(id: string?): Game?

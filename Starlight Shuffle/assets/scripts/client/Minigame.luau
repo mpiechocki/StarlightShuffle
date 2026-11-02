@@ -28,6 +28,10 @@ export type Context = {
 	me: () -> number?,
 }
 
+-- What the cycle's timer shows (widgets/Hud), the same for every mini-game:
+-- the seconds until play starts (`starting`) or left in it, and of how many.
+export type Clock = { starting: boolean, seconds: number, total: number }
+
 export type Minigame = {
 	-- A message from this mini-game's server module.
 	receive: ((...unknown) -> ())?,
@@ -39,6 +43,10 @@ export type Minigame = {
 	-- The mini-game draws its own status, announcement and results: the cycle's
 	-- HUD then keeps only your Starlights and the Pause/Play button.
 	ownHud: boolean?,
+	-- The mini-game's own clock for the cycle's timer, when its play is not
+	-- the cycle's phases (a reveal before it, say); nil, or no function, for
+	-- the cycle's: its intro, then its playing phase.
+	clock: (() -> Clock?)?,
 	-- The camera holds the scene's authored view instead of following your
 	-- avatar; the mini-game's HUD should then take every touch.
 	fixedCamera: boolean?,

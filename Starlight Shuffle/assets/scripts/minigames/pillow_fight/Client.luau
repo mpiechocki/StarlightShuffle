@@ -223,6 +223,18 @@ return {
 		return {
 			ownHud = true,
 			fixedCamera = true,
+			-- The cycle's timer counts down to the battle (the intro, reveal and
+			-- countdown) and then its 120 s, not the cycle's whole phase.
+			clock = function(): Minigame.Clock?
+				if not model.ready then return nil end
+				local now, s = model:now(), model.schedule
+				if model.results then return { starting = false, seconds = 0, total = C.PLAY } end
+				if now < s.playAt then
+					return { starting = true, seconds = s.playAt - now,
+						total = (context.game.intro or 5) + C.REVEAL + C.COUNTDOWN }
+				end
+				return { starting = false, seconds = math.max(0, s.endsAt - now), total = C.PLAY }
+			end,
 			receive = function(kind: unknown, a: unknown, b: unknown)
 				if kind == Rules.SYNC then
 					clock:answer(a, b)

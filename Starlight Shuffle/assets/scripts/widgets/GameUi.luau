@@ -38,6 +38,12 @@ function GameUi.style(size: number, colour: ui.Color, weight: ui.FontWeight?, sp
 end
 local style = GameUi.style
 
+-- How far below the safe area a mini-game's own top panel starts: under the
+-- cycle's head (its 12 margin and 52 tall row: your Starlights, the cycle's
+-- timer and Pause/Play), with a gap. The cycle's timer is every mini-game's
+-- time left, so a top panel shows none of its own.
+GameUi.HEAD = 12 + 52 + 10
+
 -- A small translucent plum HUD panel.
 function GameUi.hud(child: w.Widget, padding: p.EdgeInsets?): w.Widget
 	return w.Container({

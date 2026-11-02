@@ -1,12 +1,13 @@
 --!strict
 --@client
--- The chat's layers of the HUD (client/Chat), shown only in the lobby: the
--- mini-game cycle has no chat. `under` is what goes beneath the HUD (name tags
+-- The chat's layers of the HUD (client/Chat), shown in the lobby and during a
+-- cycle's breaks back in the lobby scene: not while a mini-game is on. `under` is what goes beneath the HUD (name tags
 -- and speech bubbles over avatars, the latest lines along the top left under
 -- the head, and the chat bar along the bottom, with the hint pointing at the
 -- arcade above it); `over` is what goes above it
 -- (a long-pressed message's menu, and the chat rules before a first message).
--- Leaving the lobby unmounts them, which closes the keyboard.
+-- Hiding them closes the keyboard, and the chat goes quiet (Chat.quiet): no
+-- bubbles or typing left over for the next break.
 local w = require("@flutter/widgets")
 local p = require("@flutter/painting")
 local ui = require("@dart/ui")
@@ -22,10 +23,16 @@ local Style = require("./Style")
 
 -- The HUD's head (12 margin, a 52 tall row, a gap): the feed starts below it.
 local FEED_TOP = 12 + 52 + 8
--- Whether the hint shows: not while the HUD has a notice there, nor over the
--- leaderboard.
+-- Whether the chat shows: in the lobby, and on a cycle's break.
+local function chatting(place: Place.Controller): boolean
+	local round = place.round
+	return place.place == "lobby" or (place.place == "cycle" and round ~= nil and round.phase == "break")
+end
+
+-- Whether the lobby's hint shows: not while the HUD has a notice there, nor
+-- over the leaderboard, nor on a break (there is no arcade to tap).
 local function hinting(place: Place.Controller): boolean
-	return not place.moving and not place.failed and not place.boardOpen and place:online()
+	return place.place == "lobby" and not place.moving and not place.failed and not place.boardOpen and place:online()
 end
 
 local function hint(): w.Widget
@@ -45,11 +52,12 @@ return define("LobbyChat", {
 	createState = function(): Fields return { unlisten = nil, lobby = false, hint = false } end,
 	initState = function(self: State)
 		local place = self.widget.place
-		self.lobby, self.hint = place.place == "lobby", hinting(place)
-		-- Rebuilt only when the place or the hint changes, not on every HUD change.
+		self.lobby, self.hint = chatting(place), hinting(place)
+		-- Rebuilt only when the chat or the hint comes or goes, not on every HUD change.
 		self.unlisten = place:listen(function()
-			local lobby, shown = place.place == "lobby", hinting(place)
+			local lobby, shown = chatting(place), hinting(place)
 			if self.mounted and (lobby ~= self.lobby or shown ~= self.hint) then
+				if self.lobby and not lobby and self.widget.layer == "under" then self.widget.chat:quiet() end
 				self:setState(function() self.lobby, self.hint = lobby, shown end)
 			end
 		end)

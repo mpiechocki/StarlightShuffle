@@ -245,36 +245,17 @@ local CrowdView = defineCrowd("LuckyShotCrowd", {
 	end,
 })
 
--- The top panel: our score, and the countdown or the round's time left.
+-- The top panel, under the cycle's head (whose timer is the time left): our
+-- score; nothing while watching.
 local function top(model: Model): w.Widget
-	local now = model:now()
-	local playing = model.ready and now >= model.startsAt
-	local left = if not model.ready then 0 elseif playing then model.endsAt - now else model.startsAt - now
-	if model.over then left = 0 end
-	local whole = math.max(0, math.ceil(left))
-	local span = if playing then C.DURATION else C.PREPARATION
 	local me = if model.me then model.players[model.me] else nil
-	local blocks: {w.Widget} = {}
-	if me then
-		table.insert(blocks, w.Column({mainAxisSize = w.MainAxisSize.min, children = {
+	if not me then return w.SizedBox.shrink({}) end
+	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = GameUi.HEAD}),
+		child = GameUi.hud(w.Column({mainAxisSize = w.MainAxisSize.min, children = {
 			GameUi.overline("Your score"),
 			w.SizedBox({height = 3}),
 			w.Text({data = "✦ " .. me.score, style = GameUi.style(19, GameUi.TEXT, ui.FontWeight.w800)}),
-		}}))
-		table.insert(blocks, w.Container({width = 1, height = 34, margin = p.EdgeInsets.symmetric({horizontal = 12}), color = GameUi.HUD_EDGE}))
-	end
-	table.insert(blocks, w.SizedBox({width = 92, child = w.Column({mainAxisSize = w.MainAxisSize.min, children = {
-		GameUi.overline(if playing then "Time left" else "Starting in"),
-		w.SizedBox({height = 1}),
-		w.Text({data = string.format("%d:%02d", whole // 60, whole % 60), style = GameUi.style(24, GameUi.TEXT, ui.FontWeight.w800, -0.8)}),
-		w.SizedBox({height = 3}),
-		w.ClipRRect({borderRadius = p.BorderRadius.circular(2), child = w.Container({height = 3, color = color(0x33ffffff),
-			alignment = p.Alignment.centerLeft, child = w.FractionallySizedBox({widthFactor = math.clamp(left / span, 0, 1),
-				child = w.Container({color = GameUi.MUTED})})})}),
-	}})}))
-	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = 8}),
-		child = GameUi.hud(w.Row({mainAxisSize = w.MainAxisSize.min, children = blocks}),
-			p.EdgeInsets.symmetric({horizontal = 14, vertical = 7}))})})})
+		}}), p.EdgeInsets.symmetric({horizontal = 14, vertical = 7}))})})})
 end
 
 -- The slingshot reload meter at the right: the slingshot drawing back, a
@@ -363,7 +344,7 @@ local function results(model: Model): w.Widget?
 				.. (if math.abs(mine.score) == 1 then " point." else " points.")
 			else "Here's who popped the most.",
 		rows = rows,
-		footer = "Next mini-game in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
+		footer = "Back to the lobby in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
 	})
 end
 

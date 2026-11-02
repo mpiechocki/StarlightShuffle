@@ -38,7 +38,8 @@ type Rect = { x: number, y: number, w: number, h: number }
 type Layout = { width: number, height: number, landscape: boolean, arena: Rect, controls: Rect, scale: number }
 
 local function layoutFor(width: number, height: number, top: number, bottom: number): Layout
-	local hud = top + 70
+	-- Under the cycle's head and our score panel below it.
+	local hud = top + GameUi.HEAD + 50
 	if width > height * 1.05 then
 		local side = math.clamp(width * 0.3, 190, 300)
 		local arena = { x = 0, y = hud + 10, w = width - side, h = height - hud - 10 - math.max(8, bottom) }
@@ -292,32 +293,17 @@ local Arena = frameWidget("PillowFightArena", function(model: Model, layout: Lay
 	return w.Stack({clipBehavior = ui.Clip.none, children = children})
 end)
 
-local function clockText(seconds: number): string
-	local whole = math.max(0, math.ceil(seconds))
-	return (string.format("%d:%02d", whole // 60, whole % 60))
-end
 
--- The top: time left and your battle score (or the room you watch).
+-- The top, under the cycle's head (whose timer is the time left): your battle
+-- score (or the room you watch).
 local TopHud = frameWidget("PillowFightTop", function(model: Model, _layout: Layout): w.Widget
-	local now = model:now()
-	local phase = if model.results then "over" else Rules.phaseAt(model.schedule, now)
-	local left = if phase == "playing" then model.schedule.endsAt - now elseif phase == "over" then 0 else C.PLAY
 	local mine = model:mine()
 	local stat = function(label: string, child: w.Widget, width: number): w.Widget
 		return GameUi.hud(w.SizedBox({width = width, child = w.Column({mainAxisSize = w.MainAxisSize.min, children = {
 			GameUi.overline(label), w.SizedBox({height = 2}), child }})}), p.EdgeInsets.symmetric({horizontal = 12, vertical = 8}))
 	end
-	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = 8}),
+	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = GameUi.HEAD}),
 		child = w.Row({mainAxisSize = w.MainAxisSize.min, children = {
-			stat("Lights out in", w.Column({mainAxisSize = w.MainAxisSize.min, children = {
-				w.Text({data = clockText(left), style = GameUi.style(26, if phase == "playing" and left <= 10 then color(0xffffd27a) else GameUi.TEXT,
-					ui.FontWeight.w800, -0.6)}),
-				w.SizedBox({height = 3}),
-				w.ClipRRect({borderRadius = p.BorderRadius.circular(2), child = w.Container({height = 3, color = color(0x33ffffff),
-					alignment = p.Alignment.centerLeft, child = w.FractionallySizedBox({widthFactor = math.clamp(left / C.PLAY, 0, 1),
-						child = w.Container({color = GameUi.MUTED})})})}),
-			}}), 96),
-			w.SizedBox({width = 8}),
 			if mine then stat("Battle score", w.Text({data = tostring(mine.score), style = GameUi.style(26, GameUi.TEXT, ui.FontWeight.w800)}), 88)
 				else stat("Watching", w.Text({data = "Room " .. model.room, style = GameUi.style(20, GameUi.TEXT, ui.FontWeight.w800)}), 88),
 		}})})})})

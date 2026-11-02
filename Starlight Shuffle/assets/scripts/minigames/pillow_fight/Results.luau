@@ -135,7 +135,7 @@ function Results.view(model: Model): w.Widget?
 		for _, row in others do table.insert(children, row) end
 	end
 	table.insert(children, w.SizedBox({height = 10}))
-	table.insert(children, w.Text({data = "Next mini-game in " .. seconds .. "s", textAlign = ui.TextAlign.center,
+	table.insert(children, w.Text({data = "Back to the lobby in " .. seconds .. "s", textAlign = ui.TextAlign.center,
 		style = style(12, GameUi.MUTED, ui.FontWeight.w700)}))
 	local widget = GameUi.wrap(children)
 	built = { results = results, seconds = seconds, widget = widget }

@@ -354,11 +354,11 @@ local Scene = frameWidget("StarcatchersScene", function(model: Model, _context: 
 	end})
 end)
 
--- The top: your points, a ring for the round, and three streak lights.
+-- The top, under the cycle's head (whose timer is the time left): your
+-- points and three streak lights.
 local Top = frameWidget("StarcatchersTop", function(model: Model, _context: w.BuildContext): w.Widget
 	if not model.ready or not model.me or model.standings then return w.SizedBox.shrink({}) end
 	local e = elapsedOf(model)
-	local done = math.clamp(e / C.DURATION, 0, 1)
 	local lights: {w.Widget} = {}
 	for i = 1, 3 do
 		local on = e >= 0 and i <= math.min(3, model.streak)
@@ -366,7 +366,7 @@ local Top = frameWidget("StarcatchersTop", function(model: Model, _context: w.Bu
 			decoration = p.BoxDecoration({shape = p.BoxShape.circle, color = color(if on then 0xfff4d698 else 0x3db7a0c8),
 				boxShadow = if on then {p.BoxShadow({color = color(0x88ffda9b), blurRadius = 7})} else nil})}))
 	end
-	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = 12}),
+	return w.IgnorePointer({child = w.Align({alignment = p.Alignment.topCenter, child = w.Padding({padding = p.EdgeInsets.only({top = GameUi.HEAD}),
 		child = w.Column({mainAxisSize = w.MainAxisSize.min, children = {
 			GameUi.hud(w.Row({mainAxisSize = w.MainAxisSize.min, children = {
 				w.SizedBox({width = 24, height = 24, child = w.CustomPaint({painter = w.CallbackPainter({onPaint = function(canvas: ui.Canvas, size: ui.Size)
@@ -374,12 +374,6 @@ local Top = frameWidget("StarcatchersTop", function(model: Model, _context: w.Bu
 				end})})}),
 				w.SizedBox({width = 8}),
 				w.Text({data = tostring(model.score), style = GameUi.style(26, GameUi.TEXT, ui.FontWeight.w800, -1)}),
-				w.SizedBox({width = 10}),
-				w.SizedBox({width = 22, height = 22, child = w.CustomPaint({painter = w.CallbackPainter({onPaint = function(canvas: ui.Canvas, size: ui.Size)
-					local rect = ui.Rect.fromLTWH(1, 1, size.width - 2, size.height - 2)
-					canvas:drawOval(rect, Art.stroke(0xffffff, 0.15, 2))
-					if done > 0 then canvas:drawArc(rect, -math.pi / 2, done * 2 * math.pi, false, Art.stroke(0xf2defa, 1, 2)) end
-				end})})}),
 			}}), p.EdgeInsets.symmetric({horizontal = 14, vertical = 8})),
 			w.SizedBox({height = 8}),
 			w.Row({mainAxisSize = w.MainAxisSize.min, children = lights}),
@@ -441,7 +435,7 @@ local function results(model: Model): w.Widget?
 		summary = if mine then "You caught " .. mine.score .. (if mine.score == 1 then " point" else " points") .. " of starlight."
 			else "You watched this round.",
 		rows = rows,
-		footer = "Next mini-game in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
+		footer = "Back to the lobby in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
 	})
 end
 

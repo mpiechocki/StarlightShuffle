@@ -11,8 +11,9 @@
 -- Arrivals hear HELLO (who they are, which place) and their Starlights total.
 -- A place with nobody in it stops itself after a grace (server/Travel).
 -- Admins (server/Admins) hear and set the mini-game lineup in either place
--- (server/Lineup). Only the lobby has chat (server/Chat), moderated through
--- the platform (@moonbase/social).
+-- (server/Lineup). The lobby has chat (server/Chat), moderated through the
+-- platform (@moonbase/social); a cycle has it too, open only during its
+-- breaks in the lobby scene.
 local server = require("@moonbase/server")
 local scenes = require("@moonbase/scene")
 local Social = require("@moonbase/social")
@@ -75,13 +76,24 @@ return server.defineScript({
 			mode = running
 		else
 			mode = Lobby.new({ arena = world, starlights = starlights })
-			chat = Chat.new({
-				send = function(to: {types.Player}, ...: types.Value) server.notifyPlayers(to, ...) end,
-				clock = server.clock, after = server.after, platform = Social.new(),
-				room = function() return { id = server.context.instance_id, name = "Lobby" } end,
-			})
 		end
-		local talk = chat
+		local talk = Chat.new({
+			send = function(to: {types.Player}, ...: types.Value) server.notifyPlayers(to, ...) end,
+			clock = server.clock, after = server.after, platform = Social.new(),
+			room = function() return { id = server.context.instance_id, name = if place == "cycle" then "Mini-games" else "Lobby" } end,
+		})
+		chat = talk
+		-- Whether chat is open here: always in the lobby, during a cycle's breaks.
+		local function chatting(): boolean
+			local running = cycle
+			return place == "lobby" or (running ~= nil and running.phase() == "break")
+		end
+		-- Chat outside a break is dropped, but a typist may always stop typing.
+		local function heard(player: server.Player, kind: unknown, a: unknown): boolean
+			if kind ~= Net.SAY and kind ~= Net.TYPING then return false end
+			if chatting() or (kind == Net.TYPING and a == false) then talk.receive(player, kind, a) end
+			return true
+		end
 		local idle = Travel.idleStop(EMPTY_GRACE[place], function(): boolean return people.count() == 0 end)
 		idle()
 
@@ -92,26 +104,26 @@ return server.defineScript({
 				if count and player.isActive then total(player, count) end
 			end)
 			mode.added(player)
-			if talk then talk.added(player) end
+			talk.added(player)
 			lineup.added(player)
 			idle()
 		end))
 		table.insert(cancels, server.onPlayerRemoved(function(player: server.Player, _reason: string)
 			mode.removed(player)
-			if talk then talk.removed(player) end
+			talk.removed(player)
 			lineup.removed(player)
 			people.removed(player)
 			idle()
 		end))
 		table.insert(cancels, server.onPlayerMetadataChanged(function(player: server.Player, _previous: unknown, changed: {string})
 			people.metadataChanged(player)
-			if talk then talk.metadataChanged(player, changed) end
+			talk.metadataChanged(player, changed)
 		end))
 		table.insert(cancels, server.onMessage(function(player: server.Player, kind: unknown, ...: unknown)
 			if not player.isActive then return end
 			local a = ...
 			if people.receive(player, kind, a) or world.receive(player, kind, a) or lineup.receive(player, kind, ...)
-				or (talk and talk.receive(player, kind, a)) then return end
+				or heard(player, kind, a) then return end
 			mode.receive(player, kind, ...)
 		end))
 	end,

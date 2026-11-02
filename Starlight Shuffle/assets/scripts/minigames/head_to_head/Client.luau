@@ -68,13 +68,6 @@ return {
 			context.refresh()
 		end
 
-		local function clockText(): string
-			local left = if reference == nil then prepEndsAt - game.clock() else playEndsAt - game.clock()
-			if over then left = 0 end
-			local whole = math.max(0, math.ceil(left))
-			if reference == nil then return tostring(whole) end
-			return string.format("%02d:%02d", whole // 60, whole % 60)
-		end
 
 		local function view(): Board.View
 			local round = context.round()
@@ -104,7 +97,7 @@ return {
 				elseif reference then "play"
 				else "prep"
 			return {
-				phase = phase, spectating = me == nil, clock = clockText(), pool = pool, reference = reference,
+				phase = phase, spectating = me == nil, pool = pool, reference = reference,
 				cells = shownCells,
 				matched = if reference and me then Rules.matched(shownCells, reference) else 0,
 				done = done, time = time,
@@ -160,7 +153,7 @@ return {
 				context.refresh()
 			end,
 			update = function(_dt: number)
-				-- The clock redraws once a second.
+				-- Redrawn once a second, so prep turns to play on time.
 				local left = if reference == nil then prepEndsAt - game.clock() else playEndsAt - game.clock()
 				local whole = math.ceil(left)
 				if whole ~= shown then
