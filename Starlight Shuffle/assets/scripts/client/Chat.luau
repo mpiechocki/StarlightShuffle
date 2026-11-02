@@ -9,7 +9,10 @@
 -- players' messages that the platform keeps can be picked for a menu
 -- (Chat.pick, widgets/MessageMenu) that reports them (Chat.report). The
 -- chat's ground rules show before a player's first message on a device
--- (Chat.askRules, widgets/ChatRules).
+-- (Chat.askRules, widgets/ChatRules). Name tags wear their player's name style
+-- and nameplate from the shop (their identity's look, widgets/Cosmetics);
+-- yours shows too while you wear one, and during a mini-game (`cosmeticOnly`)
+-- only those tags show.
 local client = require("@moonbase/client")
 local preferences = require("@moonbase/preferences")
 local engine = require("@moonbase/engine")
@@ -18,6 +21,8 @@ local Net = require("../shared/Net")
 local Controls = require("../gameplay/Controls")
 local Multiplayer = require("./Multiplayer")
 local Roster = require("./Roster")
+local Shop = require("../shared/Shop")
+local Looks = require("./Looks")
 
 local BUBBLE_TIME = 6 -- seconds a message stays over its speaker
 local COOLDOWN = Net.CHAT_COOLDOWN + 0.3 -- leave the server's limit some network slack
@@ -32,6 +37,8 @@ local NAME_FAINT = 0.3
 -- rather than as a Flutter animation, which would redraw the whole label
 -- layer at the display's full rate for as long as anyone types.
 local DOTS_PERIOD = 1.1
+-- Animated name tags step at this rate (a tick each would redraw them at the game's).
+local LOOK_STEPS = 15
 -- The chat rules' version a player accepted on this device ("chat.rules" in
 -- the experience's preferences): raising it shows the rules again.
 local RULES = 1
@@ -46,8 +53,10 @@ export type Line = { key: number, from: number, name: string, text: string, role
 -- shows `text` (empty for none) and typing dots while `typing`, `dots` (0..1)
 -- through their cycle; `since` is when its text was said (-1 for typing
 -- alone), so the newest keeps its place when bubbles crowd.
+-- A name tag's `look` is its player's name style and plate (nil: the plain
+-- tag), drawn at time `t` (0 for still looks).
 export type Label = { key: string, x: number, y: number, text: string, typing: boolean, dots: number, bubble: boolean, opacity: number,
-	roles: {string}?, idle: boolean, since: number }
+	roles: {string}?, idle: boolean, since: number, look: Shop.Look?, t: number }
 type Said = { text: string, at: number }
 
 type Fields = {
@@ -77,6 +86,8 @@ type Fields = {
 	-- What waits on the chat rules while they show (widgets/ChatRules), and
 	-- who hears when they show or go away.
 	rulesNext: (() -> ())?, onRules: (() -> ())?,
+	-- Only tags with a shop look (during a mini-game); and whether looks stand still (client/Shop's setting).
+	cosmeticOnly: boolean, stillLooks: boolean,
 	unsubscribe: (() -> ())?,
 }
 local Chat = {}
@@ -89,7 +100,7 @@ function Chat.new(controls: Controls.Controller, multiplayer: Multiplayer.Contro
 		time = 0, sentAt = nil, serial = 0,
 		lines = {}, said = {}, typing = {}, editedAt = nil, typingSent = false, labels = {}, popping = false,
 		onLinesChanged = nil, onLabelsChanged = nil, onFeedChanged = nil, dismissInput = nil, covered = nil, picked = nil, onPicked = nil,
-		rulesNext = nil, onRules = nil, unsubscribe = nil,
+		rulesNext = nil, onRules = nil, cosmeticOnly = false, stillLooks = false, unsubscribe = nil,
 	} :: Fields, Chat)
 	self.unsubscribe = client.onMessage(function(kind: unknown, a: unknown, b: unknown, c: unknown, d: unknown, e: unknown)
 		if kind == Net.CHAT then
@@ -210,6 +221,13 @@ local function screen(projected: {read number}, i: number, width: number, height
 	return math.round(x * 2) / 2, math.round(y * 2) / 2
 end
 
+-- The part of a look a name tag wears (its name style and plate), or nil
+-- for a plain tag. Glows are the avatar's own (client/Multiplayer).
+local function tagLook(look: Shop.Look?): Shop.Look?
+	if not look or (look.names == Shop.DEFAULTS.names and look.plates == Shop.DEFAULTS.plates) then return nil end
+	return look
+end
+
 -- Label keys by player, made once rather than every frame.
 local nameKeys: {[number]: string} = setmetatable({}, {__index = function(keys, id)
 	local key = "name:" .. id; keys[id] = key; return key
@@ -224,7 +242,7 @@ local function sameLabels(a: {Label}, b: {Label}): boolean
 		local other = b[i]
 		if label.key ~= other.key or label.x ~= other.x or label.y ~= other.y or label.text ~= other.text
 			or label.typing ~= other.typing or label.dots ~= other.dots or label.opacity ~= other.opacity
-			or label.roles ~= other.roles or label.idle ~= other.idle then return false end
+			or label.roles ~= other.roles or label.idle ~= other.idle or label.look ~= other.look or label.t ~= other.t then return false end
 	end
 	return true
 end
@@ -253,15 +271,16 @@ function Chat.update(self: Controller, dt: number)
 		-- Every label's anchor first, then one projection for all of them:
 		-- a name tag's (with its text and opacity) and a bubble's, in order.
 		local points: {vector}, anchors: {{any}} = {}, {}
-		local function place(id: number, name: string?, roles: {string}?, entity: engine.Entity?, transform: engine.Transform?)
+		local function place(id: number, name: string?, roles: {string}?, entity: engine.Entity?, transform: engine.Transform?,
+			look: Shop.Look?, mine: boolean?)
 			if not entity or not entity.isValid or not entity.enabled then return end
 			local foot = (transform or entity.transform).worldPosition
-			if name and here then
-				-- Twentieths keep a slow approach from rebuilding every frame.
-				local nearness = math.clamp((NAME_FAR - vector.magnitude(foot - here)) / (NAME_FAR - NAME_NEAR), 0, 1)
+			if name and here and (look or not self.cosmeticOnly) then
+				-- Twentieths keep a slow approach from rebuilding every frame; your own is always clear.
+				local nearness = if mine then 1 else math.clamp((NAME_FAR - vector.magnitude(foot - here)) / (NAME_FAR - NAME_NEAR), 0, 1)
 				local opacity = math.round((NAME_FAINT + (1 - NAME_FAINT) * nearness) * 20) / 20
 				table.insert(points, foot)
-				table.insert(anchors, {id, name, opacity, roles, false})
+				table.insert(anchors, {id, name, opacity, roles, false, look})
 			end
 			local said, typing = self.said[id], self.typing[id] == true
 			if said or typing then
@@ -274,14 +293,20 @@ function Chat.update(self: Controller, dt: number)
 				table.insert(anchors, {id, false, said, typing})
 			end
 		end
-		-- Your own speech shows over you; your name does not.
+		-- Your own speech shows over you; your name only while you wear a shop look.
 		local multiplayer = self.multiplayer
 		local me = multiplayer.me
-		if me then place(me.id, nil, nil, mine, nil) end
+		local ownLook: Shop.Look? = nil
 		for id, avatar in multiplayer.avatars do
 			-- A name settles in once its avatar has landed.
 			local name = if avatar.arriving then nil else avatar.identity.name
-			if not avatar.mine then place(id, name, nil, avatar.parts.entity, avatar.controller.transform) end
+			local look = tagLook(avatar.identity.look)
+			if not avatar.mine then place(id, name, nil, avatar.parts.entity, avatar.controller.transform, look)
+			elseif me and me.id == id and not avatar.arriving then ownLook = look end
+		end
+		if me then
+			local own = multiplayer.avatars[me.id]
+			place(me.id, if ownLook and own then own.identity.name else nil, nil, mine, nil, ownLook, true)
 		end
 		if #points > 0 then
 			local projected = camera:worldToScreenPoints({ points = points, viewport = viewport })
@@ -291,13 +316,16 @@ function Chat.update(self: Controller, dt: number)
 				if not x or not y then continue end
 				local id = anchor[1]
 				if anchor[2] then
+					local look: Shop.Look? = anchor[6]
+					local moving = look ~= nil and not self.stillLooks and Looks.moving(look.names, look.plates)
 					table.insert(names, { key = nameKeys[id], x = x, y = y + 3, text = anchor[2], typing = false, dots = 0, bubble = false,
-						opacity = anchor[3], roles = anchor[4], idle = anchor[5], since = 0 })
+						opacity = anchor[3], roles = anchor[4], idle = anchor[5], since = 0, look = look,
+						t = if moving then math.floor(self.time * LOOK_STEPS) / LOOK_STEPS else 0 })
 				else
 					local said, typed = anchor[3], anchor[4]
 					table.insert(bubbles, { key = bubbleKeys[id], x = x, y = y, text = if said then said.text else "",
 						typing = typed, dots = if typed then self.time % DOTS_PERIOD / DOTS_PERIOD else 0, bubble = true, opacity = 1,
-						roles = nil, idle = false, since = if said then said.at else -1 })
+						roles = nil, idle = false, since = if said then said.at else -1, look = nil, t = 0 })
 				end
 			end
 		end

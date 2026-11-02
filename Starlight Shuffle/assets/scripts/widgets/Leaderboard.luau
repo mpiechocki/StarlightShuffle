@@ -1,7 +1,7 @@
 --!strict
 --@client
 -- The leaderboard panel the lobby's leaderboard button opens: the top players
--- by lifetime Starlights, and where you stand. It asks the server each time it
+-- by Starlight balance (what they have to spend), and where you stand. It asks the server each time it
 -- opens (client/Place); a tap on the dimmed scene or the close button shuts it.
 local w = require("@flutter/widgets")
 local p = require("@flutter/painting")

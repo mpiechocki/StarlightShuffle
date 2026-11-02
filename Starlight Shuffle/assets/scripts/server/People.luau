@@ -3,9 +3,11 @@
 -- Who is in this place and how their avatars look: the name, outfit and
 -- thumbnail every avatar's identity carries (server/Arena). An outfit in the
 -- player's host metadata is their real one and beats the client's own LOOK;
--- the thumbnail comes only from the metadata's `avatar_id`.
+-- the thumbnail comes only from the metadata's `avatar_id`. Their look from
+-- the shop (server/Accounts) rides along once their account is read.
 local types = require("@moonbase/types")
 local Net = require("../shared/Net")
+local Shop = require("../shared/Shop")
 
 type Person = { player: types.Player, identity: Net.Identity, fixed: boolean }
 export type People = {
@@ -14,6 +16,8 @@ export type People = {
 	-- Takes LOOK messages; false for any other.
 	receive: (player: types.Player, kind: unknown, a: unknown) -> boolean,
 	metadataChanged: (player: types.Player) -> (),
+	-- What [player] wears from the shop.
+	setLook: (player: types.Player, look: Shop.Look) -> (),
 	identity: (session: number) -> Net.Identity?,
 	name: (session: number) -> string?,
 	-- Everyone here, by session id.
@@ -39,7 +43,8 @@ function People.new(): People
 		-- A fresh record, so replication sees the identity part change.
 		person.identity = { session = player.session_id, player = player.player_id,
 			name = Net.name(player.metadata, player.player_id),
-			outfit = outfit or person.identity.outfit, avatar = Net.avatarId(field(player, "avatar_id")) }
+			outfit = outfit or person.identity.outfit, avatar = Net.avatarId(field(player, "avatar_id")),
+			look = person.identity.look }
 	end
 
 	return {
@@ -69,6 +74,13 @@ function People.new(): People
 		metadataChanged = function(player: types.Player)
 			local person = people[player.session_id]
 			if person then describe(person) end
+		end,
+		setLook = function(player: types.Player, look: Shop.Look)
+			local person = people[player.session_id]
+			if not person then return end
+			local identity = table.clone(person.identity)
+			identity.look = if Shop.plain(look) then nil else table.clone(look)
+			person.identity = identity
 		end,
 		identity = function(session: number): Net.Identity?
 			local person = people[session]

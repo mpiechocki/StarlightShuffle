@@ -1,7 +1,7 @@
 --!strict
 --@client
 -- Names floating over the lobby's tap targets ("Join mini-games" over the
--- arcade doorway, "Leaderboard" over the board), following them on screen as the
+-- arcade doorway, "Leaderboard" over the board, "Shop" over the shop stall), following them on screen as the
 -- camera moves. `Labels.update` projects them each frame from the root;
 -- the widget redraws only when a label moved by a pixel or more.
 local engine = require("@moonbase/engine")
@@ -15,6 +15,7 @@ type Target = { id: string, text: string, icon: material.IconRef, lift: number, 
 local TARGETS: {Target} = {
 	{ id = "start-label", text = "Join mini-games", icon = material.play_arrow_rounded, lift = 0, gold = true },
 	{ id = "leaderboard-label", text = "Leaderboard", icon = material.leaderboard_rounded, lift = 0, gold = false },
+	{ id = "shop-label", text = "Shop", icon = material.storefront_rounded, lift = 0, gold = false },
 }
 
 type Shown = { x: number, y: number, target: Target }

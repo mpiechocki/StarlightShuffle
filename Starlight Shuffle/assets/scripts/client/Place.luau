@@ -1,7 +1,7 @@
 --!strict
 --@client
 -- Where this player is and what it is doing, for the HUD: the place (lobby or
--- cycle, from HELLO), their lifetime Starlights, the cycle's current round with
+-- cycle, from HELLO), their Starlight balance, the cycle's current round with
 -- its countdown, whether they paused, the last results, the leaderboard and
 -- whether a move between places is under way or failed; for admins, the
 -- mini-game lineup and whether its panel is open. It routes the current

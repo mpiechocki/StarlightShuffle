@@ -9,8 +9,9 @@
 -- the bubbles, its name in its player's role colour with their role icons
 -- after it (client/Roles), as the chat and the app show them, and a "Zzz"
 -- before it while they are idle (never, in the lobby: client/Chat does not
--- track idleness). Adapted
--- from the runway project's PlayerLabels.
+-- track idleness). A player wearing a shop name style or nameplate gets it
+-- instead of the pill (widgets/Cosmetics): their plate, or a dark pill that
+-- keeps a light name readable. Adapted from the runway project's PlayerLabels.
 --
 -- Labels move every frame, so each is drawn without an offscreen layer: a
 -- faint name tag carries its opacity in its colours rather than through an
@@ -34,6 +35,9 @@ local Emojis = require("../client/Emojis")
 local Roles = require("../client/Roles")
 local EmojiText = require("./EmojiText")
 local RoleIcons = require("./RoleIcons")
+local Cosmetics = require("./Cosmetics")
+local Looks = require("../client/Looks")
+local Shop = require("../shared/Shop")
 
 local function color(value: number): ui.Color return ui.Color({value = value}) end
 local BUBBLE_FILL = color(0xf5fffbff)
@@ -80,7 +84,8 @@ type Props = { read chat: Chat.Controller }
 -- says whether it was drawn with its tail.
 type Cached = { text: string, typing: boolean, dots: number, opacity: number, width: number, tail: number,
 	big: boolean, textHeight: number, tailed: boolean,
-	emojis: number, roles: {string}?, ranks: number, idle: boolean, settled: boolean, child: w.Widget }
+	emojis: number, roles: {string}?, ranks: number, idle: boolean, settled: boolean, child: w.Widget,
+	look: Shop.Look?, t: number }
 -- [born]: when each label part appeared, on client/Chat's clock; [keys]:
 -- each label's key, made once rather than with every move. The layer's
 -- children are [shown] (label keys, in order) at [placements]; [screen],
@@ -226,6 +231,25 @@ end
 -- soft grey, or in the player's role colour, and their role icons
 -- after it; a "Zzz" before it when [idle]. It settles in from just above,
 -- [t] (0..1) of the way.
+-- A tag in a shop look: the name in its style on its plate (or a dark pill
+-- for a name style alone), at [opacity], drawn at [time]; it settles in as
+-- the plain one does.
+local STYLED_FILL = 0xd91b1636
+local function styledTag(text: string, look: Shop.Look, opacity: number, t: number, time: number): w.Widget
+	local plated = Looks.plate(look.plates) ~= nil
+	local label = Cosmetics.label(text, look.names, if plated then look.plates else nil, time, 10.5, nil, TAG_MAX)
+	if not plated then
+		label = w.Container({constraints = r.BoxConstraints({maxWidth = TAG_MAX}), padding = p.EdgeInsets.fromLTRB(7, 3, 7, 3),
+			decoration = p.BoxDecoration({color = color(STYLED_FILL), borderRadius = p.BorderRadius.circular(99),
+				border = p.Border.all({color = color(0x40ffffff)})}), child = label})
+	end
+	local tag: w.Widget = w.Padding({padding = p.EdgeInsets.only({top = TAG_GAP}), child = label})
+	local value = if t >= 1 then 1 else 1 - (1 - t) ^ 3
+	if value < 1 then tag = w.Transform.translate({offset = ui.Offset({dx = 0, dy = (1 - value) * -6}), child = tag}) end
+	local shown = opacity * value
+	return if shown < 1 then w.Opacity({opacity = shown, child = tag}) else tag
+end
+
 local function nameTag(text: string, roles: {string}?, opacity: number, t: number, idle: boolean): w.Widget
 	local tint = Roles.color(roles)
 	local ink = if tint then 0xff000000 + tint else TAG_INK
@@ -295,13 +319,15 @@ local function arrange(self: State): ({string}, {number}, boolean)
 		local emojis, ranks = Emojis.revision(), Roles.revision()
 		if not cached or cached.text ~= label.text or cached.typing ~= label.typing or cached.opacity ~= label.opacity
 			or (label.bubble and cached.emojis ~= emojis)
-			or (not label.bubble and (cached.roles ~= label.roles or cached.ranks ~= ranks or cached.idle ~= label.idle)) then
+			or (not label.bubble and (cached.roles ~= label.roles or cached.ranks ~= ranks or cached.idle ~= label.idle
+				or cached.look ~= label.look or cached.t ~= label.t)) then
 			local placeholder: w.Widget = w.SizedBox({})
 			local width, textHeight = 0, 0
 			if label.bubble then width, textHeight = measure(label.text, scaler, self.direction :: ui.TextDirection) end
 			cached = { text = label.text, typing = label.typing, dots = label.dots, opacity = label.opacity, tail = 0,
 				width = width, textHeight = textHeight, big = label.text ~= "" and EmojiText.only(label.text, JUMBO_MOST) ~= nil,
-				tailed = true, emojis = emojis, roles = label.roles, ranks = ranks, idle = label.idle, settled = false, child = placeholder }
+				tailed = true, emojis = emojis, roles = label.roles, ranks = ranks, idle = label.idle, settled = false, child = placeholder,
+				look = label.look, t = label.t }
 			self.contents[label.key] = cached
 		end
 		local x = label.x
@@ -366,6 +392,7 @@ local function arrange(self: State): ({string}, {number}, boolean)
 			cached.child = w.RepaintBoundary({key = key, child = w.Center({child = if label.bubble
 				then w.FractionalTranslation({translation = HANG_UP, child = bubble(label.text, label.typing,
 					if entry.tailed then entry.tail else nil, label.dots, entry.pops)})
+				elseif label.look then styledTag(label.text, label.look, label.opacity, entry.pops.tag, label.t)
 				else nameTag(label.text, label.roles, label.opacity, entry.pops.tag, label.idle)})})
 			rebuild = true
 		end

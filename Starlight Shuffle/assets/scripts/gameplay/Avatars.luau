@@ -2,17 +2,21 @@
 --@client
 -- A replicated avatar (prefabs/Avatar): its presentation root, the native
 -- counterpart that owns its position, and the "visual" child whose
--- AvatarRenderer shows the outfit.
+-- AvatarRenderer shows the outfit; the "aura" child's particles are the
+-- shop's avatar glow, off until it is worn (client/Multiplayer).
 local engine = require("@moonbase/engine")
 local scenes = require("@moonbase/scene")
 local Avatars = {}
-export type Avatar = {entity: engine.Entity, native: scenes.Entity, visual: engine.Entity, renderer: engine.AvatarRendererComponent}
+export type Avatar = {entity: engine.Entity, native: scenes.Entity, visual: engine.Entity, renderer: engine.AvatarRendererComponent,
+	aura: engine.ParticleEmitterComponent?, auraEntity: engine.Entity?}
 
 -- [visuals] maps the prefab's authored entity IDs to their presentation entities.
 function Avatars.from(entity: engine.Entity, native: scenes.Entity, visuals: {[string]: engine.Entity}): Avatar
 	local visual = assert(visuals.visual, 'The avatar prefab needs a "visual" child')
+	local aura = visuals.aura
 	return {entity = entity, native = native, visual = visual,
-		renderer = assert(visual.avatarRenderer, "The avatar visual needs an AvatarRenderer")}
+		renderer = assert(visual.avatarRenderer, "The avatar visual needs an AvatarRenderer"),
+		aura = if aura then aura.particleEmitter else nil, auraEntity = aura}
 end
 
 local MARGIN = 0.04 -- grace around an outfit's opaque box, in the avatar's own units

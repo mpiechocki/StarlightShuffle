@@ -113,6 +113,151 @@
           "blobMaxDistance": 2.0
         }
       ]
+    },
+    {
+      "id": "aura",
+      "name": "Avatar aura",
+      "parent": "avatar",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.85,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "ParticleEmitter",
+          "id": "aura-glow",
+          "duration": 5.0,
+          "loop": true,
+          "playOnStart": false,
+          "prewarm": true,
+          "startDelay": 0.0,
+          "maxParticles": 512,
+          "space": "local",
+          "seed": 0,
+          "simulationSpeed": 1.0,
+          "destroyOnFinish": false,
+          "rate": 0.0,
+          "rateOverDistance": 0.0,
+          "bursts": [],
+          "shape": "box",
+          "radius": 0.5,
+          "angle": 25.0,
+          "boxSize": [
+            1.0,
+            1.0,
+            0.02
+          ],
+          "surfaceOnly": false,
+          "randomDirection": 1.0,
+          "lifetime": [
+            1.8,
+            2.6
+          ],
+          "speed": [
+            0.01,
+            0.05
+          ],
+          "startSize": [
+            0.34,
+            0.48
+          ],
+          "rotation": [
+            0.0,
+            0.0
+          ],
+          "angularVelocity": [
+            0.0,
+            0.0
+          ],
+          "color": 16777215,
+          "colorAlt": 16777215,
+          "randomColor": false,
+          "alpha": [
+            0.22,
+            0.32
+          ],
+          "acceleration": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "drag": 0.5,
+          "inheritVelocity": 0.0,
+          "noiseStrength": 0.0,
+          "noiseFrequency": 1.0,
+          "noiseSpeed": 0.25,
+          "sizeOverLife": [
+            [
+              0.0,
+              0.85
+            ],
+            [
+              1.0,
+              1.05
+            ]
+          ],
+          "colorOverLife": {
+            "color": [
+              [
+                0,
+                16777215
+              ]
+            ],
+            "alpha": [
+              [
+                0,
+                0
+              ],
+              [
+                0.3,
+                1
+              ],
+              [
+                0.7,
+                1
+              ],
+              [
+                1,
+                0
+              ]
+            ]
+          },
+          "speedOverLife": null,
+          "twinkle": 0.0,
+          "twinkleSpeed": 2.0,
+          "texture": "",
+          "sheet": [
+            1,
+            1
+          ],
+          "frames": "fixed",
+          "frame": 0,
+          "frameRate": 12.0,
+          "blend": "alpha",
+          "alignment": "view",
+          "stretch": 0.1,
+          "cameraFade": [
+            0.0,
+            0.0
+          ],
+          "fog": true
+        }
+      ]
     }
   ]
 }

@@ -28,6 +28,7 @@
 --                     RESULTS, results (to each player: their room in full, other rooms' winners)
 local types = require("@moonbase/types")
 local value = require("@moonbase/value")
+local Rewards = require("../../shared/Rewards")
 
 local Rules = {}
 
@@ -56,7 +57,7 @@ Rules.CONFIG = table.freeze({
 	HIT_SCORE = 1, KO_SCORE = 3,
 	ROOM = 4, MIN_ROOM = 3,
 	RECONNECT = 8, -- seconds a disconnected human keeps their seat before a bot takes it
-	WINNER_STARLIGHTS = 5, -- every room winner's reward (the cycle's first prize)
+	WINNER_STARLIGHTS = Rewards.PLACES[1], -- every room winner's reward (the cycle's first prize)
 	RATE = 30, -- intents a participant may send per second
 	-- Filler bots: approachable and fallible, on the same rules as everyone.
 	BOT = table.freeze({

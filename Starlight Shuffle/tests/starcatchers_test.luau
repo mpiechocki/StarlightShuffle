@@ -7,6 +7,7 @@
 -- lineup and distant players, the wire format, and the round's intents,
 -- visibility, reconnects and results.
 local test = require("@moonbase/test")
+local Rewards = require("@project/shared/Rewards")
 local Rules = require("@project/minigames/starcatchers/Rules")
 local Round = require("@project/minigames/starcatchers/Round")
 
@@ -352,7 +353,7 @@ test.unit("results rank the whole match; the top three still here are paid once"
 		paid += 1
 		local place = 0
 		for _, s in standings do if s.player == id then place = s.place end end
-		t:equal(n, ({ 5, 3, 2 })[place])
+		t:equal(n, Rewards.place(place))
 	end
 	t:equal(paid, 3)
 	t:truthy(standings[1].score > 20)

@@ -31,6 +31,7 @@ local types = require("@moonbase/types")
 local Task = require("@moonbase/task")
 local Net = require("../shared/Net")
 local Games = require("../shared/Games")
+local Rewards = require("../shared/Rewards")
 local Arena = require("./Arena")
 local Starlights = require("./Starlights")
 local Travel = require("./Travel")
@@ -100,6 +101,9 @@ function Cycle.new(host: Host): Cycle
 	local endsAt = 0 -- server clock when the phase ends
 	local playEnds = 0 -- server clock when play ends (or would)
 	local earned: {[number]: number} = {} -- this mini-game's Starlights by session
+	-- Who did something in this mini-game during its play (sent it a message):
+	-- only they earn its completion reward (shared/Rewards).
+	local acted: {[number]: boolean} = {}
 	local loaded: string? = nil -- a scene loaded ahead of its intro, while gathering
 	local waitingSince = 0 -- server clock of a waiting cycle's first arrival
 	-- The mini-game a break announced, and its index in Games.list: its intro plays it.
@@ -186,6 +190,7 @@ function Cycle.new(host: Host): Cycle
 		upcoming, upcomingIndex = nil, 0
 		index, game, round = nextIndex, nextGame, round + 1
 		table.clear(earned)
+		table.clear(acted)
 		phase, endsAt = "intro", server.clock() + (nextGame.intro or Games.INTRO)
 		if loaded ~= nextGame.scene then host.arena.load(nextGame.scene) end
 		loaded = nil -- the next intro loads afresh: this mini-game will have changed it
@@ -268,7 +273,9 @@ function Cycle.new(host: Host): Cycle
 		local bySession: {[number]: server.Player} = {}
 		for session, member in members do
 			local name = host.name(session) or ("Player " .. member.player.player_id)
+			-- Its placement bonuses, plus completing it for an active player still here.
 			local amount = earned[session] or 0
+			if member.player.isActive and (acted[session] or amount > 0) then amount += Rewards.COMPLETE end
 			bySession[session] = member.player
 			table.insert(rows, { player = member.player.player_id, name = name, starlights = amount })
 			if amount > 0 then table.insert(awards, { player = member.player.player_id, name = name, amount = amount }) end
@@ -279,12 +286,24 @@ function Cycle.new(host: Host): Cycle
 		end)
 		while #rows > Net.MAX_RESULTS do table.remove(rows) end
 		broadcast()
-		server.notifyPlayers(nil, Net.RESULTS, Net.resultsValue({ game = current.id, rows = rows }))
-		-- One award per mini-game played here: a retry counts once.
-		host.starlights.award(server.context.instance_id .. ":" .. round, awards, function(totals: {[number]: number}?)
-			if not totals then return end
+		-- One award per mini-game played here: a retry counts once. Each take is
+		-- boosted by its player's booster as the store awards it, and the
+		-- results show what was given (what was earned, if the store failed).
+		local shown = round
+		host.starlights.award(server.context.instance_id .. ":" .. round, awards, function(award: Starlights.Awarded?)
+			if award then
+				for _, row in rows do row.starlights = award.given[row.player] or row.starlights end
+				table.sort(rows, function(a: Net.Row, b: Net.Row): boolean
+					if a.starlights ~= b.starlights then return a.starlights > b.starlights end
+					return a.name < b.name
+				end)
+			end
+			if round == shown and phase == "results" then
+				server.notifyPlayers(nil, Net.RESULTS, Net.resultsValue({ game = current.id, rows = rows }))
+			end
+			if not award then return end
 			for _, player in bySession do
-				local total = totals[player.player_id]
+				local total = award.totals[player.player_id]
 				if total and player.isActive then host.total(player, total) end
 			end
 		end)
@@ -356,6 +375,7 @@ function Cycle.new(host: Host): Cycle
 			if not members[player.session_id] then return end
 			members[player.session_id] = nil
 			earned[player.session_id] = nil
+			acted[player.session_id] = nil
 			host.arena.leave(player)
 			if phase == "intro" or phase == "playing" then call("leave", player) end
 			recount()
@@ -374,6 +394,7 @@ function Cycle.new(host: Host): Cycle
 				local id = ...
 				-- Only the current mini-game hears its own messages, and only during play.
 				if member and game and id == game.id and (phase == "intro" or phase == "playing") then
+					if phase == "playing" then acted[player.session_id] = true end
 					call("receive", player, select(2, ...))
 				end
 				return true

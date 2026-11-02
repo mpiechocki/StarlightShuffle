@@ -8,7 +8,9 @@
 -- many of the Games.MIN_PLAYERS needed are); `over` is what goes above it
 -- (a long-pressed message's menu, and the chat rules before a first message).
 -- Hiding them closes the keyboard, and the chat goes quiet (Chat.quiet): no
--- bubbles or typing left over for the next break.
+-- bubbles or typing left over for the next break. During a mini-game only
+-- the name tags of players wearing a shop look stay (client/Chat's
+-- cosmeticOnly, set by the root).
 local w = require("@flutter/widgets")
 local p = require("@flutter/painting")
 local ui = require("@dart/ui")
@@ -77,8 +79,13 @@ return define("LobbyChat", {
 		if self.unlisten then self.unlisten(); self.unlisten = nil end
 	end,
 	build = function(self: State, _: w.BuildContext): w.Widget
-		if not self.lobby then return w.SizedBox.shrink({}) end
 		local chat = self.widget.chat
+		if not self.lobby then
+			if self.widget.layer == "under" and self.widget.place.place == "cycle" then
+				return w.IgnorePointer({child = w.RepaintBoundary({child = PlayerLabels({chat = chat})})})
+			end
+			return w.SizedBox.shrink({})
+		end
 		local children: {w.Widget} = if self.widget.layer == "under" then {
 			w.IgnorePointer({child = w.RepaintBoundary({child = PlayerLabels({chat = chat})})}),
 			w.RepaintBoundary({child = ChatFeed({chat = chat, top = FEED_TOP})}),

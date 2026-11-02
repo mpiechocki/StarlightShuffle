@@ -28,6 +28,16 @@ local Roster = require("./Roster")
 local Avatars = require("../gameplay/Avatars")
 local Controls = require("../gameplay/Controls")
 local Player = require("../gameplay/PlayerController")
+local Looks = require("./Looks")
+
+local AURA_RATE = 150 -- the avatar glow's particles a second
+-- The glow is a thin sheet of soft particles just behind the avatar, turned to
+-- the camera and sized to what the outfit draws (its renderer's content
+-- bounds; the prefab's emitter is a 1 x 1 m sheet, scaled): the outfit hides
+-- its middle, so it shows as a halo round the silhouette rather than blobs
+-- drifting over it.
+local AURA_FILL = 0.9 -- of the outfit's width and height the sheet covers
+local AURA_BEHIND = 0.14 -- metres behind it, away from the camera
 
 -- Our session id, shown name and the kind of place we are in.
 export type Me = { id: number, name: string, place: Net.Place }
@@ -39,6 +49,8 @@ export type Avatar = {
 	parts: Avatars.Avatar, session: number, player: number, record: number, mine: boolean,
 	identity: Net.Identity, controller: Player.Controller, replica: any, dressed: {number}?, layered: boolean,
 	arriving: boolean,
+	-- The glow colour its aura shows (nil: none) and how strongly (0 off, 1 reduced, 2 full).
+	glow: number?, glowLevel: number,
 }
 type Fields = {
 	controls: Controls.Controller, outfit: {number}, avatar: string?,
@@ -55,6 +67,8 @@ type Fields = {
 	-- Whether our own avatar is here (anyone new from now on arrives), and
 	-- whether it has arrived in this place.
 	settled: boolean, arrived: boolean,
+	-- The viewer's "reduce cosmetic glow and effects" setting (client/Shop).
+	reduceEffects: boolean,
 	unsubscribe: (() -> ())?,
 }
 local Multiplayer = {}
@@ -97,7 +111,7 @@ function Multiplayer.new(controls: Controls.Controller, outfit: {number}, avatar
 		scene = nil, sceneName = nil,
 		replication = nil, adapter = nil, avatars = {}, controlled = {},
 		looked = false, sequence = 0, failedAt = nil, now = game.clock(), onScene = nil, onMine = nil, onLeft = nil,
-		onReady = nil, onArrive = nil, onLanded = nil, onHello = nil, settled = false, arrived = false, unsubscribe = nil,
+		onReady = nil, onArrive = nil, onLanded = nil, onHello = nil, settled = false, arrived = false, reduceEffects = false, unsubscribe = nil,
 	} :: Fields, Multiplayer)
 	-- Loading the scene we already show just hands it back.
 	local stage = setmetatable({
@@ -150,7 +164,8 @@ local function adopt(self: Controller, identity: Net.Identity, id: number, root:
 	local arriving = if mine then not self.arrived else self.settled and previous == nil
 	if arriving then controller:hide() end
 	local avatar: Avatar = { parts = parts, session = identity.session, player = identity.player, record = id, mine = mine,
-		identity = identity, controller = controller, replica = nil, dressed = nil, layered = false, arriving = arriving }
+		identity = identity, controller = controller, replica = nil, dressed = nil, layered = false, arriving = arriving,
+		glow = nil, glowLevel = 0 }
 	self.avatars[identity.session], self.controlled[id] = avatar, controller
 	self.rostered = false
 	-- Reports name the assignment they were made in, so stale ones are dropped.
@@ -289,9 +304,51 @@ function Multiplayer.update(self: Controller, dt: number)
 				if self.onArrive then self.onArrive(avatar) end
 			end
 		end
+		-- The shop's avatar glow, once landed.
+		local aura = avatar.parts.aura
+		if aura and aura.isValid then
+			local look = avatar.identity.look
+			local glow = if look and not avatar.arriving then Looks.glow(look.glows) else nil
+			local level = if not glow then 0 elseif self.reduceEffects then 1 else 2
+			local sheet = avatar.parts.auraEntity
+			if glow and camera and sheet and sheet.isValid then
+				local foot = avatar.parts.entity.transform.worldPosition
+				local toward = vector.create(camera.x - foot.x, 0, camera.z - foot.z)
+				local length = vector.magnitude(toward)
+				local bounds = renderer.contentBounds
+				if length > 1e-3 and bounds then
+					toward /= length
+					local right = vector.create(toward.z, 0, -toward.x)
+					local width, height = bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y
+					local at = foot + vector.create(0, (bounds.min.y + bounds.max.y) / 2, 0)
+						+ right * ((bounds.min.x + bounds.max.x) / 2) - toward * AURA_BEHIND
+					sheet.transform.worldPosition = at
+					sheet.transform:lookAt({target = at + toward})
+					sheet.transform.scale = vector.create(math.max(0.2, width * AURA_FILL), math.max(0.4, height * AURA_FILL), 1)
+				end
+			end
+			if glow ~= avatar.glow or level ~= avatar.glowLevel then
+				avatar.glow, avatar.glowLevel = glow, level
+				if glow then
+					aura.tint = glow
+					aura.rate = if level == 2 then AURA_RATE else AURA_RATE / 3
+					if not aura.isPlaying then aura:play() end
+				else
+					aura:stop()
+					aura:clear()
+				end
+			end
+		end
 		-- Controls update our own avatar.
 		if not avatar.mine and avatar.controller.transform.isValid then avatar.controller:update(dt, yaw, camera) end
 	end
+end
+
+-- What we wear now: our avatar's outfit here, else our own.
+function Multiplayer.wearing(self: Controller): {number}
+	local me = self.me
+	local avatar = if me then self.avatars[me.id] else nil
+	return if avatar and avatar.identity.outfit then avatar.identity.outfit else self.outfit
 end
 
 -- The shown name of a session's player, from its avatar's identity.

@@ -4,7 +4,8 @@ For coding agents and scripting guidance, read [AGENTS.md](AGENTS.md). It explai
 the runtime, bindings, client/server boundaries, UI, components, and project tests.
 
 Players gather in a **lobby**, then play a looping **cycle** of short multiplayer
-**mini-games**, earning **Starlights** that are kept on a lifetime **leaderboard**.
+**mini-games**, earning **Starlights** that rank them on a **leaderboard** and buy
+name styles, nameplates and avatar glows in the lobby's **shop**.
 Open this folder in Moonbase, sign in and press **Play** (the arrow beside it sets
 the client count; pick the `lobby` profile to start the way a real launch does).
 
@@ -97,12 +98,92 @@ has been empty for 30 s (cycle) or 300 s (lobby).
 
 ## Starlights and the leaderboard
 
-`server/Starlights.luau` keeps every player's lifetime total in `@moonbase/storage`:
-a sorted set ranks players, and a hash keeps the name each was last seen with. So
-totals outlast sessions, places and launches. A cycle adds a mini-game's Starlights
-in one storage operation when its results show; its id (instance and round) makes a
-retried award count once. The HUD shows your total in every place; the leaderboard
-lists the top 20 and your rank.
+**Rewards** (`shared/Rewards.luau`, configurable there): every player still there
+when a mini-game ends who did something in it (sent it a move during play) earns
+50 for completing it, and the top three add 50, 30 and 15 (one placement bonus
+each; every mini-game's podium uses these). A player who did nothing earns nothing.
+
+`server/Starlights.luau` keeps every player's Starlight balance in `@moonbase/storage`:
+a sorted set ranks players by what they have (the shop spends from it, so the
+leaderboard is by current balance), and a hash keeps the name each was last seen
+with. So balances outlast sessions, places and launches. A cycle adds a mini-game's
+Starlights in one storage operation when its results show, boosting each player's
+take there by their booster (floor(take x highest active multiplier), once per
+round) and writing it to their history; its id (instance and round) makes a retried
+award count once. The cycle's results show what was given. The HUD shows your
+balance in every place; the leaderboard lists the top 20 and your rank.
+
+## The shop
+
+Tapping the **shop stall** in the lobby ("Shop" floats over it) opens the shop
+(`client/Shop`, `widgets/ShopPanel`, after the shop preview in
+`starlight-games/shop`): a portrait panel at most 447 wide over the dimmed lobby,
+with your Starlight and Stars balances, the tabs **Names**, **Nameplates**,
+**Avatar Glow** and **Boosters**, and your look (your name and plate over your
+avatar with its glow, the three slots, Reset preview). Items sort by price across
+currencies; selecting one only previews it. The catalogue, prices and rules are in
+`shared/Shop.luau`; how each cosmetic looks in `client/Looks.luau`, drawn by
+`widgets/Cosmetics.luau` (names and plates are painted in Flutter: gradients,
+stars, rosettes and ornaments; the currency icons are the supplied pixel art).
+
+- **Currencies.** Starlight buys the static cosmetics; Stars (the player's
+  Everskies currency, `primary` in `@moonbase/economy`) buy the animated ones and
+  the boosters. The Stars balance shown is the app's for the signed-in account,
+  less what the shop spent this session.
+- **Account** (`server/Accounts.luau`, in storage against the account id):
+  ownership, the equipped name, plate and glow, booster tokens with what they cost,
+  the running booster and its expiry, the permanent tier, the accessibility
+  settings, the last 30 history lines and a durable record of each Stars purchase.
+  An account that cannot be read is never overwritten: the shop says so and buying
+  stays off.
+- **Starlight purchases** take the Starlight and grant the item in one storage
+  operation (both or neither); a retried request counts once.
+- **Stars purchases** are written down first (blocking other purchases until they
+  settle), charged with the purchase's id as the platform's operation id (asking
+  again never charges twice), then delivered. A refusal fails it with nothing
+  taken; an unknown answer stays **pending** ("don't buy it again") and is asked
+  again a little later and whenever the player arrives anywhere; a charge whose
+  delivery fails is delivered again the same way.
+- **Boosters.** Weekly ones buy a token, activated later (with its own
+  confirmation) for seven days in a row on the datastore's clock; one runs at a
+  time. Permanent ones apply at once; Eternal Radiance upgrades to Eternal
+  Supernova for 6,000 Stars. Boosters never stack, purchases that would not help are
+  blocked, and a permanent booster refunds (through the platform, once) the unused
+  weekly tokens it makes redundant. The tab shows your multiplier, running booster
+  and tokens; the other tabs don't.
+- **Wearing it.** Equipping saves at once and is broadcast on your avatar's
+  identity: name tags show the name style and plate (your own too while you wear
+  one, and during mini-games only styled tags show); the glow is a halo of soft
+  particles on a sheet just behind the avatar, turned to the camera and sized to the
+  outfit's drawn bounds, so the outfit hides its middle (the `aura` child of the
+  avatar prefab, placed by `client/Multiplayer`; the avatar renderer has no outline,
+  so the exact silhouette glow is the shop preview's).
+  Score tables and chat keep plain names.
+- **Settings** (the sliders button): reduce motion (looks stand still; the device's
+  own setting counts too), reduce cosmetic glow and effects, and the purchase history.
+
+In editor Play the economy is the SDK's stand-in: Stars purchases succeed without
+touching any wardrobe or balance.
+
+**Admin test tools.** Admins (`server.startup.admins`) see a flask button in the
+shop's header that opens **Test tools**; the server checks every use
+(`SHOP_TEST`, `server/Accounts`) and tells nobody else they exist:
+
+- **Balances:** +1,000 / +10,000 Starlight (an unboosted "Admin test grant" in the
+  history; it counts on the leaderboard), Starlight to 0, and +20,000 test Stars,
+  which exist only in editor Play and only in the shop's displayed balance: real
+  Stars are never granted.
+- **Rewards:** a simulated 1st place (100 base) or completion (50) through the
+  real award, boosted by your booster; "Repeat last reward" re-sends the same
+  round id and must add nothing.
+- **Next Stars purchase:** normal, refused (not enough Stars), an unknown answer
+  (pending, settled by the retry about 20 s later) or a delivery that fails once
+  (charged, delivered by the retry). The fault is used up by one purchase.
+- **Boosters:** end the running weekly booster now, or in one minute.
+- **Account:** reset your shop account (everything but your Starlight; refused
+  while a purchase is settling).
+
+To test refunds: buy a weekly token or two, then a permanent booster.
 
 Local Play starts each run with an empty datastore, so totals reset between Play runs
 there; within a run they carry across moves between places.
@@ -195,8 +276,8 @@ camera; avatars stand behind it.
   client reconciles with taps it already showed. Nine matches complete and lock a
   canvas, with the server's elapsed time and a completion sequence for ties. Play ends
   at 90 s, or when every connected participant has finished.
-- **Podium.** The three fastest completed boards win 5, 3 and 2 Starlights; incomplete
-  boards never place. The podium shows during the cycle's results, then the cycle moves on.
+- **Podium.** The three fastest completed boards win 50, 30 and 15 Starlights; incomplete
+  boards never place (prizes: `shared/Rewards`). The podium shows during the cycle's results, then the cycle moves on.
 - **Drops.** A participant who disconnects keeps their canvas, and any finish already
   validated. If they come back to the same cycle before the end, they carry on. The timer
   never stops. An award goes only to a finisher who is still connected.
@@ -227,7 +308,7 @@ cached paths) and `Assets` with `SceneAssets` (the art and audio, which ship wit
   stream within ±105 ms. Rock +1, gem +3, bomb −3 (never below zero). The client
   shatters its item at once and undoes that if the server's answer disagrees.
 - **Results.** Points, then whoever reached their final score first, then player id.
-  The top three get 5, 3 and 2 Starlights through the cycle. The results are sent once.
+  The top three get 50, 30 and 15 Starlights through the cycle. The results are sent once.
   A miner who drops keeps their stream, score and slowdown; if they come back to the
   same cycle, a snapshot restores everything without restarting.
 - **Art and audio.** `assets/textures/blast_mining/cave.png` is the supplied cave.
@@ -251,7 +332,7 @@ idempotent ranked results.
   Blast Mining, Lucky Shot, Star Pass and Pillow Fight use it.
 - `client/ServerClock.luau`: the server clock on a client, synced by SYNC pings.
 - `shared/Standings.luau`: the tie policy (points, then whoever reached their final
-  score first, then player id) and the 5/3/2 Starlight prizes.
+  score first, then player id) and the podium prizes (`shared/Rewards`).
 - `widgets/AvatarImage.luau`: a player's full-body render or head portrait from their
   outfit, with a neutral fallback.
 
@@ -329,8 +410,8 @@ catch, pass, burst and a quiet loop.
   louder while you hold a star, silent between waves.
 - **Drops.** A competitor away for 20 s forfeits; their star is removed and the wave
   keeps its burst. Reconnecting before that keeps everything.
-- **Results.** Survivor first, then later eliminations, then passes, then seat. Five,
-  three and two Starlights for the podium. If the 300 s safety timeout in its Games row
+- **Results.** Survivor first, then later eliminations, then passes, then seat. 50,
+  30 and 15 Starlights for the podium. If the 300 s safety timeout in its Games row
   is ever reached, survivors rank by passes, then seat.
 
 `tests/star_pass_test.luau` checks star supply, wave length and tick pace, target choice
@@ -380,7 +461,7 @@ lullaby, your throw's whoosh, the two-note warning ring, the hit thud and the do
   `Rules.CONFIG.BOT`). They never receive Starlights.
 - **Results.** Each room ranks by score, knockouts, hits, fewer knockouts suffered, then
   the draw ticket: one winner, unique places. Each human room winner still here gets
-  5 Starlights (the cycle's first prize stands in for the prototype's 100 points). Your
+  50 Starlights (the cycle's first prize stands in for the prototype's 100 points). Your
   room shows first and in full; "Winners from other rooms" lists one winner per other
   room. A room whose humans all left, or a round the cycle ended early, is aborted and
   pays nobody.
@@ -421,8 +502,8 @@ and satellite-hit sounds.
 - **Lineup.** One shuffled, wrapping lineup per round: your two neighbours stand at the
   edges and up to six more (offsets ±2, ±3, ±4) small, faint and blurred in the
   distance. Each net update goes only to its owner and the players who show it.
-- **Results.** The whole match ranks by the shared tie policy; the top three take 5, 3
-  and 2 Starlights if they brought home at least one star.
+- **Results.** The whole match ranks by the shared tie policy; the top three take 50, 30
+  and 15 Starlights if they brought home at least one star.
 
 `tests/starcatchers_test.luau` checks the hash, star density and wave composition,
 satellite timing, the throw, top and return times, one carried star and banking, the
@@ -459,26 +540,27 @@ used instead. `tests/floor_test.luau` checks the rectangle and its blocks.
 ## Files
 
 - `assets/scripts/Root.luau`: the client root. It wires the controllers, the HUD and
-  the lobby's tap targets (the arcade and the leaderboard).
+  the lobby's tap targets (the arcade, the leaderboard and the shop stall).
 - `assets/scripts/client/`: `Multiplayer` (the replicated world and every avatar in it),
   `Place` (which place you are in, the cycle's round, your Starlights, the leaderboard,
   moves between places, and routing to the current mini-game's client module),
   `Appearance`, `Roster` and the lobby chat's `Chat` (with `Emojis`, `Roles`,
-  `AvatarImages` and its English `ChatText`).
+  `AvatarImages` and its English `ChatText`), and the shop's `Shop` and `Looks`.
 - `assets/scripts/widgets/`: `Hud` (with `Leaderboard`, `WallLabels` over the lobby's
   buttons, and the shared `Style`), `WalkControls`, and the lobby chat: `LobbyChat`
   (which shows it only in the lobby), `ChatBar`, `ChatFeed`, `ChatLine`, `ChatRules`,
   `MessageMenu`, `PlayerLabels`, the emoji widgets and their `ChatStyle`, all from
-  Sky Lounge.
+  Sky Lounge, and the shop's `ShopPanel` and `Cosmetics`.
 - `assets/scripts/gameplay/`: movement, the follow camera and `WalkArea`, ported from
   Sky Lounge.
 - `assets/scripts/server/`: `Root`, `Lobby`, `Chat` (the lobby's chat), `Cycle`, `Arena` (the scene and avatars;
   it swaps scenes between mini-games on one replication stream), `People` (who is here
-  and how they look), `Starlights`, `Travel` (finding, starting and moving between
+  and how they look), `Starlights`, `Accounts` (shop accounts and purchases), `Travel` (finding, starting and moving between
   places) and the mini-game registry `Games`.
 - `assets/scripts/shared/`: `Net` (the wire protocol and its validators), `Games` (the
-  mini-game list), `Floor` and `EmojiCodes`.
-- `assets/prefabs/Avatar.prefab`: every player's avatar, with its movement settings.
+  mini-game list), `Shop` (the shop's catalogue and rules), `Rewards`, `Floor` and `EmojiCodes`.
+- `assets/prefabs/Avatar.prefab`: every player's avatar, with its movement settings and
+  its `aura` (the shop's avatar glow).
 
 Project settings and Save are in the **Moonbase** menu. **Hosting** links a
 PHP-managed experience when you are ready to upload, preview or publish; it is

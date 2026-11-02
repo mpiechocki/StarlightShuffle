@@ -3959,6 +3959,31 @@
      "fades": true
     }
    ]
+  },
+  {
+   "id": "shop-label",
+   "name": "Shop label",
+   "parent": "shop",
+   "enabled": true,
+   "tags": [],
+   "transform": {
+    "position": [
+     0.0,
+     3.2,
+     0.2
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "components": []
   }
  ]
 }

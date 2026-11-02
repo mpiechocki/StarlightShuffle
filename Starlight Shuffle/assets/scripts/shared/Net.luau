@@ -8,7 +8,7 @@
 --   client -> server: MOVE, report  (packed by @moonbase/prediction)
 --                     LOOK, outfit
 --   server -> client: HELLO, sessionId, name, place  (when you arrive)
---                     STARLIGHTS, total  (your lifetime Starlights)
+--                     STARLIGHTS, total  (your Starlight balance)
 --
 -- Lobby (server/Lobby):
 --   client -> server: START, joining  (tapping the arcade: checking in for the
@@ -18,6 +18,26 @@
 --                     MOVING  |  FAILED, reason  |  LEADERBOARD, board
 -- Checked-in players stay in the lobby until Games.MIN_PLAYERS of them are,
 -- then go to a cycle together.
+--
+-- Lobby shop (server/Accounts, shared/Shop; tapping the shop stall opens it):
+--   client -> server: SHOP  (opened: read my account again)
+--                     BUY, request, itemId, price, currency  (as confirmed)
+--                     EQUIP, request, slot, itemId  |  ACTIVATE, request, tokenId
+--                     PREFS, reduceMotion, reduceEffects
+--   server -> client: ACCOUNT, account | false  (on arrival, on opening and after
+--                     every change; false: it could not be read, so no buying)
+--                     SHOPPED, request, outcome, message, refund  (how a request
+--                     went: "done", "pending" (still settling, never to be paid
+--                     again) or "refused"; a purchase settled later, after a
+--                     reconnect, comes with an empty request)
+-- Requests are the client's own ids (Shop.request): asking again with one never
+-- buys twice. What players wear shows on their avatar's identity (`look`).
+-- Admins only (server/Admins), in the lobby, the shop's test tools:
+--   client -> server: SHOP_TEST, action, argument  (Shop.TESTS: grant Starlight,
+--                     a simulated mini-game reward, the next Stars purchase's
+--                     fault, booster expiry, resetting their own account)
+--   server -> client: TESTER, {sandbox, fault}  (on arrival and on change;
+--                     never sent to anyone else)
 --
 -- Lobby chat (server/Chat), as in Sky Lounge:
 --   client -> server: SAY, text  |  TYPING, typing
@@ -49,6 +69,7 @@
 local types = require("@moonbase/types")
 local value = require("@moonbase/value")
 local Movement = require("@moonbase/movement")
+local Shop = require("./Shop")
 local Net = {}
 
 Net.MOVE = "move"
@@ -70,6 +91,15 @@ Net.CHAT = "chat"
 Net.READY = "ready"
 Net.SAY = "say"
 Net.TYPING = "typing"
+Net.SHOP = "shop"
+Net.ACCOUNT = "account"
+Net.BUY = "buy"
+Net.EQUIP = "equip"
+Net.ACTIVATE = "activate"
+Net.PREFS = "prefs"
+Net.SHOPPED = "shopped"
+Net.SHOP_TEST = "shoptest"
+Net.TESTER = "tester"
 
 Net.MAX_OUTFIT = 200 -- variation ids per outfit
 Net.MAX_NAME = 64 -- bytes of a name in leaderboard and results messages
@@ -359,15 +389,18 @@ function Net.avatarId(v: unknown): string?
 end
 
 -- Avatars (server/Arena): who an avatar is, its `identity` part. `avatar` is
--- their thumbnail's media id, when the platform gave one.
-export type Identity = { session: number, player: number, name: string, outfit: {number}?, avatar: string? }
+-- their thumbnail's media id, when the platform gave one; `look` what they
+-- wear from the shop (shared/Shop), when anything.
+export type Identity = { session: number, player: number, name: string, outfit: {number}?, avatar: string?, look: Shop.Look? }
 
 -- Packed identity: [varint session][varint player][varint name length][name]
 -- [varint outfit count + 1, or 0 for none][zigzag varint variation ids]
--- [varint avatar length + 1, or 0 for none][avatar].
+-- [varint avatar length + 1, or 0 for none][avatar], then, with a look,
+-- [varint length][cosmetic id] for its name, plate and glow.
 function Net.identity(identity: Identity): buffer
 	local outfit, avatar = identity.outfit or {}, identity.avatar or ""
-	local size = 40 + #identity.name + 5 * #outfit + #avatar
+	local look = identity.look
+	local size = 40 + #identity.name + 5 * #outfit + #avatar + 200
 	local bytes, at = buffer.create(size), 0
 	local function varint(n: number)
 		while n >= 128 do buffer.writeu8(bytes, at, n % 128 + 128); at += 1; n = n // 128 end
@@ -379,6 +412,11 @@ function Net.identity(identity: Identity): buffer
 	for _, id in outfit do varint(if id >= 0 then id * 2 else -id * 2 - 1) end
 	varint(if identity.avatar then #avatar + 1 else 0)
 	buffer.writestring(bytes, at, avatar); at += #avatar
+	if look then
+		for _, id in {look.names, look.plates, look.glows} do
+			varint(#id); buffer.writestring(bytes, at, id); at += #id
+		end
+	end
 	local packed = buffer.create(at)
 	buffer.copy(packed, 0, bytes, 0, at)
 	return packed
@@ -429,8 +467,20 @@ function Net.readIdentity(v: unknown): Identity?
 		at += avatarLength - 1
 		if not avatar then return nil end
 	end
+	local look: Shop.Look? = nil
+	if at < size then
+		local ids: {string} = {}
+		for i = 1, 3 do
+			local n = varint()
+			if not n or n == 0 or n > 64 or n > size - at then return nil end
+			ids[i] = buffer.readstring(bytes, at, n)
+			at += n
+		end
+		-- Ids this client does not know show as the defaults.
+		look = Shop.look({ names = ids[1], plates = ids[2], glows = ids[3] })
+	end
 	if at ~= size then return nil end
-	return { session = session, player = player, name = name, outfit = outfit, avatar = avatar }
+	return { session = session, player = player, name = name, outfit = outfit, avatar = avatar, look = look }
 end
 
 -- An avatar's `motion` part: what @moonbase/prediction needs about its pose.

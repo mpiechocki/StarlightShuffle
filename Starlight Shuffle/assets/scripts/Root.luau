@@ -8,7 +8,8 @@
 -- doorway, the room behind it or a cabinet) starts the mini-game cycle and the
 -- leaderboard board on the wall opens the leaderboard; in the cycle, the HUD's head shows the mini-game and its
 -- Pause/Play button. The lobby has a chat as in Sky Lounge (client/Chat,
--- widgets/LobbyChat). Moving between places keeps this VM: everything that
+-- widgets/LobbyChat), and the shop stall opens the shop (client/Shop,
+-- widgets/ShopPanel), whose looks show on everyone's name tag and avatar. Moving between places keeps this VM: everything that
 -- belonged to the previous server instance resets. The app's loading screen
 -- stays up until we stand dressed in the first scene.
 local engine = require("@moonbase/engine")
@@ -27,19 +28,23 @@ local WalkControls = require("./widgets/WalkControls")
 local Hud = require("./widgets/Hud")
 local WallLabels = require("./widgets/WallLabels")
 local LobbyChat = require("./widgets/LobbyChat")
+local Shop = require("./client/Shop")
+local ShopPanel = require("./widgets/ShopPanel")
 
 --@property
 local title: string = "Starlight Shuffle"
 
--- The lobby's two tap targets, by the prefix of the authored ids a tap may hit:
--- the arcade (start-…) and the leaderboard (leaderboard-…).
+-- The lobby's tap targets, by the prefix of the authored ids a tap may hit:
+-- the arcade (start-…), the leaderboard (leaderboard-…) and the shop stall (shop, shop-…).
 local function starts(id: string): boolean return string.sub(id, 1, 6) == "start-" end
 local function opensBoard(id: string): boolean return string.sub(id, 1, 12) == "leaderboard-" end
+local function opensShop(id: string): boolean return id == "shop" or string.sub(id, 1, 5) == "shop-" end
 
 local controls: Controls.Controller? = nil
 local multiplayer: Multiplayer.Controller? = nil
 local place: Place.Controller? = nil
 local chat: Chat.Controller? = nil
+local shop: Shop.Controller? = nil
 local labels: WallLabels.Labels? = nil
 -- Lifts the app's loading screen (game.holdLoadingScreen).
 local releaseLoading = function() end
@@ -74,6 +79,8 @@ return engine.defineScript({
 		multiplayer = others
 		local talk = Chat.new(walker, others)
 		chat = talk
+		local store = Shop.new()
+		shop = store
 		releaseLoading = game.holdLoadingScreen()
 		others.onScene = function(scene: engine.Scene?)
 			walker:attachScene(scene)
@@ -89,6 +96,7 @@ return engine.defineScript({
 		here.onTransferred = function()
 			others:transferred()
 			talk:reset()
+			store:transferred()
 			walker:attachScene(walker.scene)
 		end
 		-- A tap on the game while typing only ends the typing; the joystick
@@ -107,6 +115,11 @@ return engine.defineScript({
 			local id = tapped(walker, x, y)
 			if id and starts(id) then here:start(); return true end
 			if id and opensBoard(id) then here:openBoard(true); return true end
+			if id and opensShop(id) then
+				local me = others.me
+				store:openShop(others:wearing(), if me then me.name else nil)
+				return true
+			end
 			return false
 		end
 		runtime.runView(w.Stack({fit = w.StackFit.expand, children = {
@@ -115,6 +128,7 @@ return engine.defineScript({
 			LobbyChat({place = here, chat = talk, layer = "under"}),
 			Hud({place = here}),
 			LobbyChat({place = here, chat = talk, layer = "over"}),
+			ShopPanel({shop = store, clock = function(): number return store.time end}),
 		}}))
 	end,
 	onUpdate = function(dt: number)
@@ -122,6 +136,17 @@ return engine.defineScript({
 		if controls then controls:update(dt) end
 		if multiplayer then multiplayer:update(dt) end
 		if place then place:update(dt) end
+		if shop then
+			shop:update(dt)
+			-- The viewer's look settings, and in a mini-game only styled name tags.
+			local prefs = shop:prefs()
+			if multiplayer then multiplayer.reduceEffects = prefs.effects end
+			if chat then
+				local round = if place then place.round else nil
+				chat.stillLooks = prefs.motion
+				chat.cosmeticOnly = place ~= nil and place.place == "cycle" and not (round and round.phase == "break")
+			end
+		end
 		if chat then chat:update(dt) end
 		if controls and place then controls.fixedCamera = place:fixedCamera() end
 		if labels and controls and place then
@@ -131,6 +156,7 @@ return engine.defineScript({
 	onDestroy = function()
 		releaseLoading()
 		if chat then chat:dispose(); chat = nil end
+		if shop then shop:dispose(); shop = nil end
 		if place then place:dispose(); place = nil end
 		if multiplayer then multiplayer:dispose(); multiplayer = nil end
 		if controls then controls:dispose(); controls = nil end

@@ -7,8 +7,11 @@
 --   cycle: server/Cycle, the mini-game cycle.
 --
 -- Both run their scenes and everyone's avatar in server/Arena, know who is
--- here from server/People, and keep lifetime Starlights in server/Starlights.
--- Arrivals hear HELLO (who they are, which place) and their Starlights total.
+-- here from server/People, and keep Starlight balances in server/Starlights.
+-- Arrivals hear HELLO (who they are, which place) and their Starlight balance.
+-- Every player's shop account (server/Accounts) is read on arrival for what
+-- they wear; the lobby also runs the shop, paying in Stars through the
+-- platform's economy (@moonbase/economy; a stand-in in editor Play).
 -- A place with nobody in it stops itself after a grace (server/Travel).
 -- Admins (server/Admins) hear and set the mini-game lineup in either place
 -- (server/Lineup). The lobby has chat (server/Chat), moderated through the
@@ -17,6 +20,7 @@
 local server = require("@moonbase/server")
 local scenes = require("@moonbase/scene")
 local Social = require("@moonbase/social")
+local Economy = require("@moonbase/economy")
 local types = require("@moonbase/types")
 local Net = require("../shared/Net")
 local Arena = require("./Arena")
@@ -28,6 +32,7 @@ local Travel = require("./Travel")
 local Admins = require("./Admins")
 local Lineup = require("./Lineup")
 local Chat = require("./Chat")
+local Accounts = require("./Accounts")
 
 -- What runs this place: server/Lobby or server/Cycle.
 type Mode = {
@@ -45,6 +50,7 @@ local cancels: {() -> ()} = {}
 local arena: Arena.Arena? = nil
 local cycle: Cycle.Cycle? = nil
 local chat: Chat.Chat? = nil
+local accounts: Accounts.Accounts? = nil
 
 return server.defineScript({
 	onStart = function()
@@ -61,9 +67,26 @@ return server.defineScript({
 		local function total(player: server.Player, count: number)
 			server.notifyPlayers({player}, Net.STARLIGHTS, count)
 		end
+		local admins = Admins.new(server.startup)
+		local shop = Accounts.new({
+			send = function(player: types.Player, ...: types.Value) server.notifyPlayers({player}, ...) end,
+			clock = server.clock, after = server.after, economy = Economy.new(),
+			look = people.setLook, total = total, shop = place == "lobby", admin = admins.is,
+			-- The shop's test tools reward through the real award, booster and all.
+			award = function(player: types.Player, id: string, amount: number, done: (number?) -> ())
+				starlights.award(id, {{ player = player.player_id, name = people.name(player.session_id) or "", amount = amount }},
+					function(award: Starlights.Awarded?)
+						if not award then done(nil); return end
+						local count = award.totals[player.player_id]
+						if count and player.isActive then total(player, count) end
+						done(award.given[player.player_id] or 0)
+					end)
+			end,
+		})
+		accounts = shop
 		local mode: Mode
 		-- The admins' lineup of mini-games, with what this cycle plays now and next.
-		local lineup = Lineup.new(Admins.new(server.startup), function(): (string?, string?)
+		local lineup = Lineup.new(admins, function(): (string?, string?)
 			if cycle then return cycle.queue() end
 			return nil, nil
 		end)
@@ -103,6 +126,7 @@ return server.defineScript({
 			starlights.total(player.player_id, function(count: number?)
 				if count and player.isActive then total(player, count) end
 			end)
+			shop.added(player)
 			mode.added(player)
 			talk.added(player)
 			lineup.added(player)
@@ -110,6 +134,7 @@ return server.defineScript({
 		end))
 		table.insert(cancels, server.onPlayerRemoved(function(player: server.Player, _reason: string)
 			mode.removed(player)
+			shop.removed(player)
 			talk.removed(player)
 			lineup.removed(player)
 			people.removed(player)
@@ -123,7 +148,7 @@ return server.defineScript({
 			if not player.isActive then return end
 			local a = ...
 			if people.receive(player, kind, a) or world.receive(player, kind, a) or lineup.receive(player, kind, ...)
-				or heard(player, kind, a) then return end
+				or heard(player, kind, a) or shop.receive(player, kind, ...) then return end
 			mode.receive(player, kind, ...)
 		end))
 	end,
@@ -136,6 +161,7 @@ return server.defineScript({
 		table.clear(cancels)
 		if cycle then cycle.dispose(); cycle = nil end
 		if chat then chat.dispose(); chat = nil end
+		if accounts then accounts.dispose(); accounts = nil end
 		if arena then arena.dispose(); arena = nil end
 	end,
 })

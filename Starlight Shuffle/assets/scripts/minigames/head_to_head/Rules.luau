@@ -19,6 +19,7 @@
 -- last sequence it took, so the client can reconcile what it showed early.
 local types = require("@moonbase/types")
 local value = require("@moonbase/value")
+local Standings = require("../../shared/Standings")
 
 local Rules = {}
 
@@ -37,7 +38,7 @@ Rules.PLACES = 3 -- podium places
 Rules.MAX_POOL = 64
 Rules.MAX_NAME = 64
 -- Starlights for 1st, 2nd and 3rd.
-Rules.AWARDS = table.freeze({ 5, 3, 2 })
+Rules.AWARDS = Standings.PRIZES
 
 -- Outline colours (0xRRGGBB), one per pool position; a pool larger than this
 -- list gets evenly spread hues after it.
