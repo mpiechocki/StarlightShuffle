@@ -52,9 +52,15 @@ local AMBER = Style.color(0xffffc46b)
 local function phaseLine(place: Place.Controller): string
 	local round = place.round
 	if not round then return "Waiting for players" end
-	if round.phase == "waiting" then return if place:remaining() > 0 then "Starting soon…" else "Waiting for players" end
+	local here = round.players or 0
+	if round.phase == "waiting" then
+		return if place:remaining() > 0 then "Starting soon…" else "Waiting for everyone to arrive…"
+	end
 	local left = Style.clock(place:remaining())
-	if round.phase == "break" then return "Starts in " .. left .. " · chat until then" end
+	if round.phase == "break" then
+		if here < Games.MIN_PLAYERS then return "Too few players · back to the lobby soon" end
+		return "Starts in " .. left .. " · chat until then"
+	end
 	if round.phase == "intro" then return "Starts in " .. left end
 	if round.phase == "playing" then return left .. " left" end
 	return "Back to the lobby in " .. left
@@ -243,7 +249,8 @@ local function build(place: Place.Controller): w.Widget
 	if inCycle and place.lineup then table.insert(layers, cycleAdminButton(place)) end
 	-- The end of a break: 3, 2, 1 and the next mini-game loads.
 	local round = place.round
-	if inCycle and round and round.phase == "break" and place:remaining() <= 3 and place:remaining() > 0 then
+	if inCycle and round and round.phase == "break" and (round.players or 0) >= Games.MIN_PLAYERS
+		and place:remaining() <= 3 and place:remaining() > 0 then
 		table.insert(layers, GameUi.countdown(math.ceil(place:remaining())))
 	end
 	local center = if inCycle and place.minigame and not place:minigameOwnsHud() then introCard(place) or resultsCard(place) else nil

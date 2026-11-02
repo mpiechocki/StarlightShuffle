@@ -20,9 +20,9 @@ Every server instance runs the same server root (`server/Root.luau`) and is one
 
 **Lobby.** Everyone walks around in their own outfit, as in Sky Lounge, in a pastel
 arcade lounge floating on a cloud under a night sky. Tapping the **arcade** (its
-doorway, the little room behind it or a cabinet; "Start mini-games" floats over it)
-sends the player to a cycle with room, the fullest first, starting one when none has;
-players tapping within half a second of each other go together. The **leaderboard**
+doorway, the little room behind it or a cabinet; "Join mini-games" floats over it)
+checks the player in for the next mini-game (see Three players); once three are in,
+they go together to a cycle with room, the fullest first, starting one when none has. The **leaderboard**
 board on the wall beside it, and the trophy button in the HUD, open the leaderboard.
 Tap targets are found by id prefix: `start-…` and `leaderboard-…` (`Root.luau`).
 
@@ -49,6 +49,17 @@ break picks and names the next mini-game: the HUD's head reads "Up next: …" wi
 The break runs on the cycle's own server (it is not a transfer to a lobby), so you
 chat with the players you are playing with. Arrivals join the mini-game under way,
 unless it is already showing results, or the break.
+
+**Three players.** No mini-game starts with fewer than `Games.MIN_PLAYERS` (3)
+players. Tapping the arcade in the lobby checks you in for the next mini-game (tap
+it again to check out); you stay in the lobby, chatting, and the hint above the chat
+bar says how many are in ("You're in! 2 of 3 ready · waiting for 1 more player").
+Once three are checked in, the lobby sends them all together to a cycle
+(`server/Lobby`). A cycle that is short of players before its next mini-game (after
+results, when someone left, or a break or an intro that ends short) sends everyone
+back to the lobby they came from, still checked in; a mini-game already playing
+plays on when someone leaves. A new cycle waits up to 12 s for its whole group to
+arrive before doing the same.
 
 **Timer.** Before and during every mini-game the middle of the HUD's head is the
 cycle's timer, the same for all of them: "Starts in" through the intro, then "Time
@@ -135,7 +146,8 @@ scene loading, avatars, timing, results and Starlights; a mini-game only decides
 happens during play and calls `context.award(player, n)`.
 
 A mini-game's `shared/Games.luau` row may set `intro` (seconds announced before play,
-default 5) and `minPlayers`: the cycle skips that game in rounds with fewer players. Its client module may set `ownHud` (it draws its own status and results; the
+default 5) and `minPlayers`: the cycle skips that game in rounds with fewer players
+(never fewer than `Games.MIN_PLAYERS`, 3, which every mini-game needs). Its client module may set `ownHud` (it draws its own status and results; the
 cycle's HUD keeps only Starlights, the timer and Pause/Play), `clock` (its own
 clock for the timer) and `fixedCamera` (the camera holds
 the scene's authored view instead of following the avatar).
@@ -148,7 +160,7 @@ The cycle plays, in order:
   fall into each miner's strike circle, and a tap anywhere swings. See below.
 - **Lucky Shot** (`lucky_shot`, third): a 45 s race to tap clouds in one shared sky
   with a slingshot. See below.
-- **Star Pass** (`star_pass`, fourth; needs 2 players): hot potato with glowing stars,
+- **Star Pass** (`star_pass`, fourth): hot potato with glowing stars,
   played in waves until one player is left. See below.
 - **Pillow Fight** (`pillow_fight`, fifth): a two-minute free-for-all in rooms of three
   or four, with filler bots, one winner per room. See below.

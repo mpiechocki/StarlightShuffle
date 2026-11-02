@@ -1,6 +1,6 @@
 --!strict
 --@client
--- Names floating over the lobby's tap targets ("Start mini-games" over the
+-- Names floating over the lobby's tap targets ("Join mini-games" over the
 -- arcade doorway, "Leaderboard" over the board), following them on screen as the
 -- camera moves. `Labels.update` projects them each frame from the root;
 -- the widget redraws only when a label moved by a pixel or more.
@@ -13,7 +13,7 @@ local Style = require("./Style")
 
 type Target = { id: string, text: string, icon: material.IconRef, lift: number, gold: boolean }
 local TARGETS: {Target} = {
-	{ id = "start-label", text = "Start mini-games", icon = material.play_arrow_rounded, lift = 0, gold = true },
+	{ id = "start-label", text = "Join mini-games", icon = material.play_arrow_rounded, lift = 0, gold = true },
 	{ id = "leaderboard-label", text = "Leaderboard", icon = material.leaderboard_rounded, lift = 0, gold = false },
 }
 

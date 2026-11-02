@@ -30,6 +30,8 @@ type Fields = {
 	paused: boolean,
 	results: Net.Results?,
 	board: Net.Board?, boardOpen: boolean,
+	-- Lobby: how many here are checked in for the next mini-game, and whether we are.
+	readyCount: number, ready: boolean,
 	-- Admins only (ADMIN): which mini-games cycles play, and its panel.
 	lineup: Net.Lineup?, lineupOpen: boolean,
 	moving: boolean, failed: Net.Reason?, failedAt: number,
@@ -88,6 +90,7 @@ local function reset(self: Controller)
 	closeMinigame(self)
 	self.place, self.round, self.results, self.board = nil, nil, nil, nil
 	self.boardOpen, self.paused, self.moving, self.failed = false, false, false, nil
+	self.readyCount, self.ready = 0, false
 	self.lineup, self.lineupOpen = nil, false
 	self.endsAt, self.shownSeconds = 0, -1
 end
@@ -95,7 +98,7 @@ end
 function Place.new(): Controller
 	local self = setmetatable({
 		place = nil, session = nil, starlights = nil, round = nil, endsAt = 0, paused = false, results = nil,
-		board = nil, boardOpen = false, lineup = nil, lineupOpen = false, moving = false, failed = nil, failedAt = 0,
+		board = nil, boardOpen = false, readyCount = 0, ready = false, lineup = nil, lineupOpen = false, moving = false, failed = nil, failedAt = 0,
 		connection = "offline", minigame = nil, minigameId = nil, minigameRound = 0, scene = nil, listeners = {},
 		onTransferred = nil, unsubscribe = nil, unwatch = nil, shownSeconds = -1,
 	} :: Fields, Place)
@@ -115,6 +118,12 @@ function Place.new(): Controller
 			if round.phase == "waiting" or round.phase == "break" then openMinigame(self, nil, 0)
 			else openMinigame(self, round.game, round.round) end
 			changed(self)
+		elseif kind == Net.READY then
+			local count, mine = Net.id(a) or 0, select(1, ...)
+			if type(a) == "number" and type(mine) == "boolean" then
+				self.readyCount, self.ready = math.max(0, count), mine
+				changed(self)
+			end
 		elseif kind == Net.PAUSED then
 			if type(a) == "boolean" then self.paused = a; changed(self) end
 		elseif kind == Net.RESULTS then
@@ -179,9 +188,11 @@ function Place.setScene(self: Controller, scene: engine.Scene?)
 	self.scene = scene
 end
 
+-- Checks in for the next mini-game, or out again (the lobby sends everyone
+-- checked in once Games.MIN_PLAYERS are).
 function Place.start(self: Controller)
 	if self.place ~= "lobby" or self.moving then return end
-	client.notifyServer(Net.START)
+	client.notifyServer(Net.START, not self.ready)
 end
 
 function Place.togglePause(self: Controller)

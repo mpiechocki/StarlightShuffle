@@ -12,7 +12,7 @@ export type Game = {
 	read scene: string, -- the scene's asset reference, "scene:<name>"
 	read duration: number, -- seconds of play
 	read intro: number?, -- seconds it is announced before play (Games.INTRO when nil)
-	read minPlayers: number?, -- skipped in rounds with fewer players than this
+	read minPlayers: number?, -- skipped in rounds with fewer players than this (never fewer than MIN_PLAYERS)
 }
 
 local list: {Game} = {
@@ -23,13 +23,15 @@ local list: {Game} = {
 	{ id = "lucky_shot", title = "Lucky Shot", blurb = "Tap clouds to fire your slingshot. Avoid storm clouds.",
 		scene = "scene:lucky_shot", duration = 45, intro = 10 },
 	{ id = "star_pass", title = "Star Pass", blurb = "Charge your star and pass it on before it bursts!",
-		scene = "scene:star_pass", duration = 300, intro = 10, minPlayers = 2 },
+		scene = "scene:star_pass", duration = 300, intro = 10 },
 	-- Reveal, countdown and 120 s of play (it ends itself sooner with one room).
 	{ id = "pillow_fight", title = "Pillow Fight", blurb = "Aim, hold and throw. Red ! means dodge.",
 		scene = "scene:pillow_fight", duration = 127, intro = 15 },
 	{ id = "starcatchers", title = "Starcatchers", blurb = "Throw your net, catch stars, dodge satellites.",
 		scene = "scene:starcatchers", duration = 60, intro = 8 },
 }
+
+local MIN_PLAYERS = 3
 
 local byId: {[string]: Game} = {}
 for _, game in list do
@@ -41,6 +43,9 @@ return table.freeze({
 	INTRO = 5,
 	-- Seconds a cycle spends back in the lobby scene between mini-games.
 	BREAK = 10,
+	-- No mini-game starts with fewer players than this: a cycle waits for them
+	-- in the lobby scene.
+	MIN_PLAYERS = MIN_PLAYERS,
 	list = table.freeze(list),
 	-- The mini-game with [id], or nil.
 	get = function(id: string?): Game?
@@ -77,7 +82,7 @@ return table.freeze({
 			local at = (index + step - 1) % #list + 1
 			local game = list[at]
 			if allowed[game.id] then
-				if (game.minPlayers or 1) <= players then return game, at end
+				if math.max(MIN_PLAYERS, game.minPlayers or 1) <= players then return game, at end
 				fallback = fallback or at
 			end
 		end

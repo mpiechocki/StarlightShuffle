@@ -3,8 +3,9 @@
 -- The chat's layers of the HUD (client/Chat), shown in the lobby and during a
 -- cycle's breaks back in the lobby scene: not while a mini-game is on. `under` is what goes beneath the HUD (name tags
 -- and speech bubbles over avatars, the latest lines along the top left under
--- the head, and the chat bar along the bottom, with the hint pointing at the
--- arcade above it); `over` is what goes above it
+-- the head, and the chat bar along the bottom, with the lobby's hint above it:
+-- tap the arcade to check in for the next mini-game, or once checked in, how
+-- many of the Games.MIN_PLAYERS needed are); `over` is what goes above it
 -- (a long-pressed message's menu, and the chat rules before a first message).
 -- Hiding them closes the keyboard, and the chat goes quiet (Chat.quiet): no
 -- bubbles or typing left over for the next break.
@@ -20,6 +21,7 @@ local ChatBar = require("./ChatBar")
 local MessageMenu = require("./MessageMenu")
 local ChatRules = require("./ChatRules")
 local Style = require("./Style")
+local Games = require("../shared/Games")
 
 -- The HUD's head (12 margin, a 52 tall row, a gap): the feed starts below it.
 local FEED_TOP = 12 + 52 + 8
@@ -29,33 +31,42 @@ local function chatting(place: Place.Controller): boolean
 	return place.place == "lobby" or (place.place == "cycle" and round ~= nil and round.phase == "break")
 end
 
--- Whether the lobby's hint shows: not while the HUD has a notice there, nor
--- over the leaderboard, nor on a break (there is no arcade to tap).
-local function hinting(place: Place.Controller): boolean
-	return place.place == "lobby" and not place.moving and not place.failed and not place.boardOpen and place:online()
+-- The lobby's hint, or nil: not while the HUD has a notice there, nor over
+-- the leaderboard, nor on a break (there is no arcade to tap).
+local function hintText(place: Place.Controller): string?
+	if place.place ~= "lobby" or place.moving or place.failed or place.boardOpen or not place:online() then return nil end
+	local count, need = place.readyCount, Games.MIN_PLAYERS
+	if place.ready then
+		local more = need - count
+		if more <= 0 then return "You're in! Starting…" end
+		return "You're in! " .. count .. " of " .. need .. " ready · waiting for " .. more
+			.. (if more == 1 then " more player" else " more players") .. " · tap the arcade to leave"
+	end
+	if count > 0 then return "Tap the arcade to join the next mini-game · " .. count .. " of " .. need .. " ready" end
+	return "Tap the arcade to join the next mini-game"
 end
 
-local function hint(): w.Widget
+local function hint(text: string, ready: boolean): w.Widget
 	return Style.card(w.Row({mainAxisSize = w.MainAxisSize.min, children = {
-		w.Icon({icon = material.star_rounded, size = 18, color = Style.GOLD}),
+		w.Icon({icon = if ready then material.check_circle_rounded else material.star_rounded, size = 18, color = Style.GOLD}),
 		w.SizedBox({width = 8}),
-		w.Flexible({child = Style.text("Tap the arcade to start the mini-games", Style.style(14, Style.WHITE, ui.FontWeight.w600), 2)}),
+		w.Flexible({child = Style.text(text, Style.style(14, Style.WHITE, ui.FontWeight.w600), 3)}),
 	}}), p.EdgeInsets.symmetric({horizontal = 16, vertical = 10}), 999)
 end
 
 type Props = { read place: Place.Controller, read chat: Chat.Controller, read layer: "under" | "over" }
-type Fields = { unlisten: (() -> ())?, lobby: boolean, hint: boolean }
+type Fields = { unlisten: (() -> ())?, lobby: boolean, hint: string? }
 type State = w.State<Props, Fields>
 local define = w.StatefulWidget.define :: w.StatefulWidgetFactory<Props, Fields>
 
 return define("LobbyChat", {
-	createState = function(): Fields return { unlisten = nil, lobby = false, hint = false } end,
+	createState = function(): Fields return { unlisten = nil, lobby = false, hint = nil } end,
 	initState = function(self: State)
 		local place = self.widget.place
-		self.lobby, self.hint = chatting(place), hinting(place)
+		self.lobby, self.hint = chatting(place), hintText(place)
 		-- Rebuilt only when the chat or the hint comes or goes, not on every HUD change.
 		self.unlisten = place:listen(function()
-			local lobby, shown = chatting(place), hinting(place)
+			local lobby, shown = chatting(place), hintText(place)
 			if self.mounted and (lobby ~= self.lobby or shown ~= self.hint) then
 				if self.lobby and not lobby and self.widget.layer == "under" then self.widget.chat:quiet() end
 				self:setState(function() self.lobby, self.hint = lobby, shown end)
@@ -71,7 +82,7 @@ return define("LobbyChat", {
 		local children: {w.Widget} = if self.widget.layer == "under" then {
 			w.IgnorePointer({child = w.RepaintBoundary({child = PlayerLabels({chat = chat})})}),
 			w.RepaintBoundary({child = ChatFeed({chat = chat, top = FEED_TOP})}),
-			ChatBar({chat = chat, hint = if self.hint then hint() else nil}),
+			ChatBar({chat = chat, hint = if self.hint then hint(self.hint, self.widget.place.ready) else nil}),
 		} else {
 			MessageMenu({chat = chat}),
 			ChatRules({chat = chat}),

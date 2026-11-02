@@ -39,13 +39,14 @@ test.unit("a cycle picks only included games, looping, in list order", function(
 	t:equal(game.id, Games.list[1].id)
 end)
 
-test.unit("too few players skip a game unless an admin left only such games", function(t)
-	local game = Games.pick(indexOf("lucky_shot"), { "star_pass", "pillow_fight" }, 1)
-	t:equal(game.id, "pillow_fight") -- Star Pass needs two
+test.unit("every mini-game needs at least three players", function(t)
+	t:equal(Games.MIN_PLAYERS, 3)
+	for _, game in Games.list do t:truthy(math.max(Games.MIN_PLAYERS, game.minPlayers or 1) >= 3) end
+	local game = Games.pick(indexOf("lucky_shot"), { "star_pass", "pillow_fight" }, 3)
+	t:equal(game.id, "star_pass")
+	-- Too few for any: the next included one anyway (the cycle waits before it starts).
 	game = Games.pick(indexOf("lucky_shot"), { "star_pass", "pillow_fight" }, 2)
 	t:equal(game.id, "star_pass")
-	game = Games.pick(0, { "star_pass" }, 1)
-	t:equal(game.id, "star_pass") -- the admin asked for it
 end)
 
 test.unit("admins are the whole account ids in the startup settings", function(t)

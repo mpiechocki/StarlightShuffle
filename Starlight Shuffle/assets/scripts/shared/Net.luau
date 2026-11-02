@@ -11,8 +11,13 @@
 --                     STARLIGHTS, total  (your lifetime Starlights)
 --
 -- Lobby (server/Lobby):
---   client -> server: START  (the Start Cycle button)  |  LEADERBOARD
---   server -> client: MOVING  |  FAILED, reason  |  LEADERBOARD, board
+--   client -> server: START, joining  (tapping the arcade: checking in for the
+--                     next mini-game, or out again)  |  LEADERBOARD
+--   server -> client: READY, count, mine  (how many here are checked in, and
+--                     whether you are; on arrival and on every change)
+--                     MOVING  |  FAILED, reason  |  LEADERBOARD, board
+-- Checked-in players stay in the lobby until Games.MIN_PLAYERS of them are,
+-- then go to a cycle together.
 --
 -- Lobby chat (server/Chat), as in Sky Lounge:
 --   client -> server: SAY, text  |  TYPING, typing
@@ -62,6 +67,7 @@ Net.GAME = "game"
 Net.ADMIN = "admin"
 Net.LINEUP = "lineup"
 Net.CHAT = "chat"
+Net.READY = "ready"
 Net.SAY = "say"
 Net.TYPING = "typing"
 
@@ -85,8 +91,9 @@ export type Reason = "busy" | "full" | "unavailable"
 -- `waiting`: nobody to play with yet.
 export type Phase = "waiting" | "intro" | "playing" | "results" | "break"
 -- What a cycle is doing: `game` is a Games id, `remaining` the seconds left in
--- this phase as of sending, `round` counts mini-games played here.
-export type Round = { phase: Phase, game: string?, round: number, remaining: number }
+-- this phase as of sending, `round` counts mini-games played here, `players`
+-- how many are here (a mini-game starts only with Games.MIN_PLAYERS).
+export type Round = { phase: Phase, game: string?, round: number, remaining: number, players: number? }
 export type Row = { player: number, name: string, starlights: number }
 -- The top players, and where you stand (nil before your first Starlight).
 export type Board = { top: {Row}, rank: number?, mine: number }
@@ -162,6 +169,7 @@ function Net.roundValue(round: Round): {[string]: types.Value}
 	local out: {[string]: types.Value} = { phase = round.phase, round = round.round,
 		remaining = math.max(0, math.round(round.remaining * 100) / 100) }
 	if round.game then out.game = round.game end
+	if round.players then out.players = round.players end
 	return out
 end
 
@@ -172,7 +180,9 @@ function Net.round(v: unknown): Round?
 	if type(phase) ~= "string" or not PHASES[phase] or not round then return nil end
 	if game ~= nil and (type(game) ~= "string" or #game == 0 or #game > 64) then return nil end
 	if type(remaining) ~= "number" or remaining ~= remaining or remaining < 0 or remaining > 86400 then return nil end
-	return { phase = phase :: Phase, game = game :: string?, round = round, remaining = remaining }
+	local players = if r.players == nil then nil else integer(r.players, 0, MAX_ID)
+	if r.players ~= nil and not players then return nil end
+	return { phase = phase :: Phase, game = game :: string?, round = round, remaining = remaining, players = players }
 end
 
 local function rowValue(row: Row): {[string]: types.Value}

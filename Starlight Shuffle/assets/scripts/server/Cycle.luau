@@ -13,8 +13,15 @@
 -- way, unless it is already showing results, or the break. The HUD's
 -- Pause/Play button (PAUSE) marks a player to leave: when the current
 -- mini-game's results end (or the break, for one who paused during it), they
--- go back to the lobby they came from (or any lobby with room). With nobody
--- here the cycle waits, and server/Root stops it after a grace.
+-- go back to the lobby they came from (or any lobby with room).
+--
+-- No mini-game starts with fewer than Games.MIN_PLAYERS here. Lobbies send
+-- players only that many at a time (server/Lobby: they check in there), so a
+-- new cycle gathers its arrivals for a few seconds (showing the coming
+-- mini-game's scene) and starts. When too few are here to start one (a group
+-- that never all arrived, a break or an intro that ends short of them),
+-- everyone goes back to the lobby, still checked in; a mini-game already
+-- playing plays on. With nobody here server/Root stops the cycle after a grace.
 --
 -- Only the mini-games in the admins' lineup (server/Lineup) are played; the
 -- cycle reads it again while gathering and during each results, and tells
@@ -32,9 +39,13 @@ local Modules = require("./Games")
 
 local RESULTS = 7 -- seconds the results show
 local LOBBY = "scene:lobby"
--- Seconds an empty cycle waits after its first arrival before announcing a
--- mini-game, so a group sent together (who land one by one) all take part.
+-- Seconds a waiting cycle gathers once enough players are here before
+-- announcing a mini-game, so a group sent together (who land one by one) all
+-- take part.
 local GATHER = 3
+-- Seconds a cycle waits for a group to arrive in full before sending back
+-- those who did.
+local ARRIVAL = 12
 local MAX_AWARD = 1000 -- Starlights one award may add
 
 export type Host = {
@@ -90,17 +101,9 @@ function Cycle.new(host: Host): Cycle
 	local playEnds = 0 -- server clock when play ends (or would)
 	local earned: {[number]: number} = {} -- this mini-game's Starlights by session
 	local loaded: string? = nil -- a scene loaded ahead of its intro, while gathering
+	local waitingSince = 0 -- server clock of a waiting cycle's first arrival
 	-- The mini-game a break announced, and its index in Games.list: its intro plays it.
 	local upcoming: Games.Game?, upcomingIndex = nil, 0
-
-	local function roundValue(): types.Value
-		return Net.roundValue({ phase = phase, game = if game then game.id else nil, round = round,
-			remaining = if phase == "waiting" and endsAt == 0 then 0 else endsAt - server.clock() })
-	end
-
-	local function broadcast()
-		server.notifyPlayers(nil, Net.ROUND, roundValue())
-	end
 
 	local function present(): {server.Player}
 		local out: {server.Player} = {}
@@ -109,6 +112,25 @@ function Cycle.new(host: Host): Cycle
 		end
 		return out
 	end
+
+	local function anyone(): boolean
+		return #present() > 0
+	end
+
+	-- Whether enough players are here to start a mini-game.
+	local function enough(): boolean
+		return #present() >= Games.MIN_PLAYERS
+	end
+
+	local function roundValue(): types.Value
+		return Net.roundValue({ phase = phase, game = if game then game.id else nil, round = round,
+			remaining = if phase == "waiting" and endsAt == 0 then 0 else endsAt - server.clock(), players = #present() })
+	end
+
+	local function broadcast()
+		server.notifyPlayers(nil, Net.ROUND, roundValue())
+	end
+
 
 	-- Calls [name] on the running mini-game; a failure is printed, never fatal to the cycle.
 	local function call(name: string, ...: any)
@@ -190,21 +212,30 @@ function Cycle.new(host: Host): Cycle
 		broadcast()
 	end
 
-	-- Back to a lobby for everyone who paused, grouped by the lobby they came from.
-	local function sendOff()
+	-- Back to a lobby for everyone who paused, grouped by the lobby they came
+	-- from; with [everyone], for everyone here, too few to play: those who did
+	-- not pause stay checked in there for the next mini-game.
+	local function sendOff(everyone: boolean?)
 		local groups: {[string]: {server.Player}} = {}
+		local keen: {[string]: {server.Player}} = {}
 		for _, member in members do
-			if member.paused and not member.leaving and member.player.isActive then
+			if (member.paused or everyone) and not member.leaving and member.player.isActive then
 				member.leaving = true
 				local key = member.lobby or ""
-				groups[key] = groups[key] or {}
-				table.insert(groups[key], member.player)
+				local into = if member.paused then groups else keen
+				into[key] = into[key] or {}
+				table.insert(into[key], member.player)
 			end
 		end
-		for lobby, players in groups do
+		local trips: {{lobby: string, players: {server.Player}, ready: boolean}} = {}
+		for lobby, players in groups do table.insert(trips, { lobby = lobby, players = players, ready = false }) end
+		for lobby, players in keen do table.insert(trips, { lobby = lobby, players = players, ready = true }) end
+		for _, trip in trips do
+			local lobby, players = trip.lobby, trip.players
 			server.notifyPlayers(players, Net.MOVING)
 			Task.run(function()
-				local ok, code = Travel.send(players, "lobby", nil, if lobby ~= "" then lobby else nil)
+				local ok, code = Travel.send(players, "lobby", if trip.ready then { ready = true } else nil,
+					if lobby ~= "" then lobby else nil)
 				if ok then return end
 				print("Back to the lobby failed: " .. tostring(code))
 				-- They stay for the next mini-game; their button shows Play again.
@@ -215,6 +246,11 @@ function Cycle.new(host: Host): Cycle
 						server.notifyPlayers({player}, Net.FAILED, "unavailable")
 						server.notifyPlayers({player}, Net.PAUSED, false)
 					end
+				end
+				-- A cycle left waiting with them gathers again, and tries again if still too few.
+				if phase == "waiting" and endsAt == 0 and anyone() then
+					waitingSince = server.clock()
+					endsAt = waitingSince + GATHER
 				end
 			end, function(err: server.RpcError)
 				print("Back to the lobby failed: " .. err.message)
@@ -271,6 +307,7 @@ function Cycle.new(host: Host): Cycle
 		host.moved()
 	end
 
+
 	local function wait()
 		call("dispose")
 		running, game = nil, nil
@@ -280,8 +317,16 @@ function Cycle.new(host: Host): Cycle
 		host.moved()
 	end
 
-	local function anyone(): boolean
-		return #present() > 0
+	-- Too few to start the next mini-game: everyone back to the lobby, checked in.
+	local function disband()
+		print("Fewer than " .. Games.MIN_PLAYERS .. " players: back to the lobby")
+		sendOff(true)
+		wait()
+	end
+
+	-- Someone came or went on a break: everyone hears how many are here.
+	local function recount()
+		if phase == "break" then broadcast() end
 	end
 
 	return {
@@ -292,15 +337,16 @@ function Cycle.new(host: Host): Cycle
 			if phase == "waiting" then
 				if endsAt == 0 then
 					-- Gather: show the coming mini-game's scene while the rest arrive.
-					endsAt = server.clock() + GATHER
-					-- (Everyone the gather brings counts; a game too big for them is
-					-- skipped at the intro, which then loads its own scene.)
+					waitingSince = server.clock()
+					endsAt = waitingSince + GATHER
 					host.refreshLineup()
-					local coming = Games.pick(index, host.lineup(), #present())
+					local coming = Games.pick(index, host.lineup(), Games.MIN_PLAYERS)
 					host.arena.load(coming.scene)
 					loaded = coming.scene
 				end
 				server.notifyPlayers({player}, Net.ROUND, roundValue())
+			elseif phase == "break" then
+				recount()
 			else
 				server.notifyPlayers({player}, Net.ROUND, roundValue())
 				if phase == "intro" or phase == "playing" then call("join", player) end
@@ -312,6 +358,7 @@ function Cycle.new(host: Host): Cycle
 			earned[player.session_id] = nil
 			host.arena.leave(player)
 			if phase == "intro" or phase == "playing" then call("leave", player) end
+			recount()
 		end,
 		receive = function(player: server.Player, kind: unknown, ...: unknown): boolean
 			local member = members[player.session_id]
@@ -337,25 +384,31 @@ function Cycle.new(host: Host): Cycle
 			local now = server.clock()
 			if phase == "waiting" then
 				if endsAt > 0 and now >= endsAt then
-					if anyone() then intro() else endsAt = 0 end
+					-- Enough have arrived; or keep waiting a little for the rest of the group.
+					if enough() then intro()
+					elseif not anyone() then endsAt = 0
+					elseif now - waitingSince < ARRIVAL then endsAt = now + 1
+					else endsAt = 0; disband() end
 				end
 				return
 			end
 			if phase == "playing" then call("update", dt) end
 			if now < endsAt then return end
 			if phase == "intro" then
-				if anyone() then play() else wait() end
+				-- Too few left to start: back to the lobby to check in again.
+				if enough() then play() else disband() end
 			elseif phase == "playing" then
 				finishPlay()
 			elseif phase == "results" then
 				sendOff()
 				call("dispose")
 				running = nil
-				if anyone() then rest() else wait() end
+				-- Too few for the next one: straight back to the lobby, no break.
+				if enough() then rest() elseif anyone() then disband() else wait() end
 			elseif phase == "break" then
 				-- Whoever paused during the break goes now, before the next one starts.
 				sendOff()
-				if anyone() then intro() else wait() end
+				if enough() then intro() elseif anyone() then disband() else wait() end
 			end
 		end,
 		queue = function(): (string?, string?)
