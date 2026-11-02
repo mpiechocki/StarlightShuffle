@@ -33,6 +33,8 @@ local Assets = require("./Assets")
 local MiningArt = require("../blast_mining/Art")
 local AvatarImage = require("../../widgets/AvatarImage")
 local GameUi = require("../../widgets/GameUi")
+local PlayerTag = require("../../widgets/PlayerTag")
+local Looks = require("../../client/Looks")
 
 local C = Rules.CONFIG
 
@@ -163,8 +165,11 @@ local CrowdView = defineCrowd("StarPassCrowd", {
 					decoration = p.BoxDecoration({color = color(if mine then 0x88fff6db else 0x44fff6db), borderRadius = p.BorderRadius.circular(999)})})}))
 			end
 			table.insert(parts, AvatarImage.body(if pl then pl.outfit else nil, bw, bh))
-			-- A small nameplate at the feet.
-			table.insert(parts, w.Positioned({left = -20, right = -20, bottom = -4, child = w.Center({child = w.Container({
+			-- A small nameplate at the feet: the player's shop look when they wear one (widgets/PlayerTag).
+			local account = if pl then pl.player else nil
+			table.insert(parts, w.Positioned({left = -20, right = -20, bottom = -4, child = w.Center({child = if Looks.of(account) and pl
+				then PlayerTag({player = account, name = pl.name, size = if entry.front then 11 else 9, maxWidth = bw + 40})
+				else w.Container({
 				padding = p.EdgeInsets.symmetric({horizontal = 6, vertical = 2}),
 				decoration = p.BoxDecoration({color = GameUi.HUD, borderRadius = p.BorderRadius.circular(6)}),
 				child = w.Text({data = label, maxLines = 1, overflow = w.TextOverflow.ellipsis,

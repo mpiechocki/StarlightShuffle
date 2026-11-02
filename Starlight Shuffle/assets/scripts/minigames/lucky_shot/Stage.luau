@@ -30,6 +30,7 @@ local Crowd = require("./Crowd")
 local Assets = require("./Assets")
 local MiningArt = require("../blast_mining/Art")
 local AvatarImage = require("../../widgets/AvatarImage")
+local PlayerTag = require("../../widgets/PlayerTag")
 local GameUi = require("../../widgets/GameUi")
 
 local C = Rules.CONFIG
@@ -236,9 +237,15 @@ local CrowdView = defineCrowd("LuckyShotCrowd", {
 				local player = model.players[entry.seat]
 				local left, top, bw, bh = box(entry.spot, width, height)
 				local avatar = AvatarImage.body(if player then player.outfit else nil, bw, bh)
+				-- Their name at their feet, in their shop look (widgets/PlayerTag).
+				local figure: w.Widget = if player then w.Stack({clipBehavior = ui.Clip.none, children = {
+					w.Positioned.fill({child = avatar}),
+					w.Positioned({left = -30, right = -30, bottom = 4, child = w.Center({child = PlayerTag({player = player.player,
+						name = player.name, size = 10, maxWidth = bw + 60})})}),
+				}}) else avatar
 				table.insert(children, w.Positioned({key = w.ValueKey({value = "seat" .. entry.seat}),
 					left = left, top = top, width = bw, height = bh,
-					child = if entry.spot.opacity < 1 then w.Opacity({opacity = entry.spot.opacity, child = avatar}) else avatar}))
+					child = if entry.spot.opacity < 1 then w.Opacity({opacity = entry.spot.opacity, child = figure}) else figure}))
 			end
 			return w.IgnorePointer({child = w.RepaintBoundary({child = w.Stack({clipBehavior = ui.Clip.hardEdge, children = children})})})
 		end})

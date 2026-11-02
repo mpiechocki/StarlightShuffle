@@ -28,6 +28,8 @@ local Pieces = require("./Pieces")
 local Intro = require("./Intro")
 local Results = require("./Results")
 local GameUi = require("../../widgets/GameUi")
+local PlayerTag = require("../../widgets/PlayerTag")
+local Looks = require("../../client/Looks")
 
 local C = Rules.CONFIG
 
@@ -193,7 +195,12 @@ local function actorView(model: Model, at: Placed, now: number): w.Widget
 			Art.hearts(canvas, size.width / 2, size.height / 2 + 0.5 * s, size.height * 0.72, actor.hp, C.HEARTS)
 		end)})})}))
 	local name = if at.pt then at.pt.name else "Player"
-	table.insert(parts, w.Positioned({left = -12 * s, right = -12 * s, top = doll + 15 * s, child = w.Center({child = w.Container({
+	local account = if at.pt then at.pt.account else nil
+	local styled = Looks.of(account)
+	-- A shop look shows as bought (widgets/PlayerTag); otherwise the game's own name pill.
+	table.insert(parts, w.Positioned({left = -12 * s, right = -12 * s, top = doll + 15 * s, child = w.Center({child = if styled
+		then PlayerTag({player = account, name = name, size = (if at.front then 11 else 9.5) * s, maxWidth = at.width + 24 * s})
+		else w.Container({
 		padding = p.EdgeInsets.symmetric({horizontal = 6 * s, vertical = 2 * s}),
 		decoration = p.BoxDecoration({color = if mine then color(0xffffecd1) else color(0xdc47314f), borderRadius = p.BorderRadius.circular(5),
 			border = p.Border.all({color = if mine then color(0xfffff8eb) else color(0xffcbb2da), width = 1})}),

@@ -159,8 +159,9 @@ end
 
 -- Wire format.
 
+-- `account`: a human's account id (their shop look shows on their name), nil for a bot.
 export type Participant = { id: number, name: string, bot: boolean, outfit: {number}?, doll: number?,
-	room: number, seat: number, draw: number, forfeited: boolean }
+	room: number, seat: number, draw: number, forfeited: boolean, account: number? }
 -- A seat's live state, with its current holder's stats.
 export type Actor = { seat: number, participant: number, hp: number, score: number, hits: number, kos: number, deaths: number,
 	charging: boolean, throwReadyAt: number, dodgeAt: number, dodgeUntil: number, dodgeReadyAt: number, stunnedUntil: number,
@@ -248,6 +249,7 @@ local function participantValue(pt: Participant): types.Value
 		forfeited = pt.forfeited }
 	if pt.outfit then out.outfit = arrayOf(pt.outfit, function(n: number): types.Value return n end) end
 	if pt.doll then out.doll = pt.doll end
+	if pt.account then out.account = pt.account end
 	return out
 end
 
@@ -258,10 +260,11 @@ local function participant(v: unknown): Participant?
 	local seat, draw = integer(r.seat, 1, C.ROOM), integer(r.draw, 1, Rules.MAX_PARTICIPANTS)
 	local outfit = if r.outfit == nil then nil else list(r.outfit, 200, function(n: unknown): number? return integer(n, -2^31, 2^31) end)
 	local doll = if r.doll == nil then nil else integer(r.doll, 1, Rules.DOLLS)
+	local account = if r.account == nil then nil else integer(r.account, 0, MAX_ID)
 	if not id or not shown or not room or not seat or not draw or type(r.bot) ~= "boolean" or type(r.forfeited) ~= "boolean"
-		or (r.outfit ~= nil and not outfit) or (r.doll ~= nil and not doll) then return nil end
+		or (r.outfit ~= nil and not outfit) or (r.doll ~= nil and not doll) or (r.account ~= nil and not account) then return nil end
 	return { id = id, name = shown, bot = r.bot :: boolean, outfit = outfit, doll = doll, room = room, seat = seat, draw = draw,
-		forfeited = r.forfeited :: boolean }
+		forfeited = r.forfeited :: boolean, account = account }
 end
 
 local function actorValue(a: Actor): types.Value

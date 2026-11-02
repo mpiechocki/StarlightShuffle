@@ -19,6 +19,8 @@ local material = require("@icons/material")
 local Appearance = require("../../client/Appearance")
 local Rules = require("./Rules")
 local Heads = require("./Heads")
+local PlayerTag = require("../../widgets/PlayerTag")
+local Looks = require("../../client/Looks")
 
 local function color(v: number): ui.Color return ui.Color({value = v}) end
 local function rgb(v: number, alpha: number): ui.Color return ui.Color({value = alpha * 0x1000000 + v}) end
@@ -205,7 +207,10 @@ local function strip(view: View): w.Widget
 			child = w.SizedBox({width = 64, child = w.Column({mainAxisSize = w.MainAxisSize.min, children = {
 				w.Stack({clipBehavior = ui.Clip.none, children = stack}),
 				w.SizedBox({height = 4}),
-				text(if player.mine then "you" else player.name, style(11, WHITE, ui.FontWeight.w700), ui.TextAlign.center),
+				-- In their shop look when they wear one (widgets/PlayerTag).
+				if Looks.of(player.player) then PlayerTag({player = player.player, name = if player.mine then "you" else player.name,
+					size = 10, maxWidth = 64})
+				else text(if player.mine then "you" else player.name, style(11, WHITE, ui.FontWeight.w700), ui.TextAlign.center),
 				w.SizedBox({height = 3}),
 				w.SizedBox({width = 46, child = m.LinearProgressIndicator({value = player.matched / Rules.CELLS, minHeight = 3,
 					backgroundColor = TILE_EMPTY, color = tint, borderRadius = p.BorderRadius.circular(2)})}),

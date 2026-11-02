@@ -6,6 +6,9 @@
 -- text (animated ones) with an optional glow; a plate is a fill (or a
 -- gradient), an edge, a corner shape, a painted ornament before the name and,
 -- for some, painted art (stars, glitter, rosettes); a glow is one colour.
+local foundation = require("@flutter/foundation")
+local Shop = require("../shared/Shop")
+
 local Looks = {}
 
 export type Name = {
@@ -87,6 +90,61 @@ function Looks.moving(names: string?, plates: string?): boolean
 	local name, plate = Looks.name(names), Looks.plate(plates)
 	return (name ~= nil and name.gradient ~= nil) or (plate ~= nil and (plate.period ~= nil or plate.art == "stars"
 		or plate.art == "glitter" or plate.art == "sweep"))
+end
+
+-- What every player here wears, by account id (client/Multiplayer keeps it
+-- from their avatars' identities), for name tags drawn outside the 3D world:
+-- the mini-games' own figures (widgets/PlayerTag).
+local worn: {[number]: Shop.Look} = {}
+-- Told when anyone's look changes; ticked (TICK_RATE a second) while an
+-- animated tag is showing and looks may move.
+Looks.changed = foundation.ChangeNotifier()
+Looks.ticker = foundation.ChangeNotifier()
+local clock = 0
+local still = false -- the viewer's reduce-motion setting (client/Shop)
+local TICK_RATE = 15
+local moving = 0 -- animated tags showing
+local since = 0
+
+function Looks.of(player: number?): Shop.Look?
+	return if player then worn[player] else nil
+end
+
+-- [player] wears [look] (nil: nothing from the shop).
+function Looks.set(player: number, look: Shop.Look?)
+	local before = worn[player]
+	if look and Shop.plain(look) then look = nil end
+	if before == look or (before and look and before.names == look.names and before.plates == look.plates
+		and before.glows == look.glows) then return end
+	worn[player] = look
+	Looks.changed:notifyListeners()
+end
+
+-- Another place: its own players.
+function Looks.clear()
+	table.clear(worn)
+	Looks.changed:notifyListeners()
+end
+
+-- An animated tag starts or stops showing.
+function Looks.watch(on: boolean)
+	moving = math.max(0, moving + (if on then 1 else -1))
+end
+
+-- Seconds the looks have been animating (what animated tags are drawn at).
+function Looks.time(): number return clock end
+
+function Looks.isStill(): boolean return still end
+function Looks.setStill(on: boolean) still = on end
+
+function Looks.tick(dt: number)
+	clock += dt
+	if moving == 0 or still then return end
+	since += dt
+	if since >= 1 / TICK_RATE then
+		since = 0
+		Looks.ticker:notifyListeners()
+	end
 end
 
 return table.freeze(Looks)

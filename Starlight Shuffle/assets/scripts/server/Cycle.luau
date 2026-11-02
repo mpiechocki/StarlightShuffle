@@ -18,8 +18,8 @@
 -- No mini-game starts with fewer than Games.MIN_PLAYERS here. Lobbies send
 -- players only that many at a time (server/Lobby: they check in there), so a
 -- new cycle goes straight from the lobby into the mini-game: the first arrival
--- starts its intro (at least ARRIVING seconds), and the rest of the group lands
--- during it. The mini-game itself is set up once the whole group is here (or
+-- starts its intro (LANDING seconds longer than usual), and the rest of the
+-- group lands during it. The mini-game itself is set up once the whole group is here (or
 -- when only its own intro is left), so nobody in it counts as a latecomer. When too few are here to start one (a group that never all
 -- arrived, a break or an intro that ends short of them),
 -- everyone goes back to the lobby, still checked in; a mini-game already
@@ -42,9 +42,10 @@ local Modules = require("./Games")
 
 local RESULTS = 7 -- seconds the results show
 local LOBBY = "scene:lobby"
--- The shortest intro a group's first mini-game gets, in seconds: they are sent
--- together but land one by one, and all of them should take part.
-local ARRIVING = 8
+-- Seconds a group's first intro adds to the mini-game's own: they are sent
+-- together but land one by one (and their outfits just after), and all of them
+-- should take part from the start.
+local LANDING = 4
 local RETRY = 5 -- seconds before a failed trip back to the lobby is tried again
 local MAX_AWARD = 1000 -- Starlights one award may add
 
@@ -211,7 +212,7 @@ function Cycle.new(host: Host): Cycle
 		table.clear(earned)
 		table.clear(acted)
 		local length = nextGame.intro or Games.INTRO
-		phase, endsAt = "intro", server.clock() + (if arriving then math.max(length, ARRIVING) else length)
+		phase, endsAt = "intro", server.clock() + (if arriving then length + LANDING else length)
 		host.arena.load(nextGame.scene)
 		running, setup = nil, nil
 		-- Announced first, so clients have the mini-game's module ready for
@@ -374,10 +375,8 @@ function Cycle.new(host: Host): Cycle
 				recount()
 			else
 				server.notifyPlayers({player}, Net.ROUND, roundValue())
-				local waiting = setup
-				-- The group is all here: its mini-game is set up with everyone in it.
-				if waiting and enough() then begin(waiting)
-				elseif phase == "intro" or phase == "playing" then call("join", player) end
+				-- A group still landing is set up in update, once all here and dressed.
+				if not setup and (phase == "intro" or phase == "playing") then call("join", player) end
 			end
 		end,
 		removed = function(player: server.Player)
@@ -414,9 +413,18 @@ function Cycle.new(host: Host): Cycle
 			local now = server.clock()
 			if phase == "waiting" then return end
 			if phase == "playing" then call("update", dt) end
-			-- A group still landing: its mini-game is set up in time for its own intro.
+			-- A group still landing: its mini-game is set up once they are all here
+			-- and their outfits known (their LOOK lands just after them), or in
+			-- time for its own intro.
 			local waiting = setup
-			if phase == "intro" and waiting and endsAt - now <= (waiting.intro or Games.INTRO) then begin(waiting) end
+			if phase == "intro" and waiting then
+				local dressed = enough()
+				for _, player in present() do
+					local who = host.identity(player.session_id)
+					if not who or not who.outfit then dressed = false end
+				end
+				if dressed or endsAt - now <= (waiting.intro or Games.INTRO) then begin(waiting) end
+			end
 			if now < endsAt then return end
 			if phase == "intro" then
 				-- Too few left to start: back to the lobby to check in again.

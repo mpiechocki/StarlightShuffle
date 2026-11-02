@@ -39,6 +39,8 @@ local NAME_FAINT = 0.3
 local DOTS_PERIOD = 1.1
 -- Animated name tags step at this rate (a tick each would redraw them at the game's).
 local LOOK_STEPS = 15
+-- The faintest a name tag in a shop look gets, however far away.
+local LOOK_FAINT = 0.85
 -- The chat rules' version a player accepted on this device ("chat.rules" in
 -- the experience's preferences): raising it shows the rules again.
 local RULES = 1
@@ -279,6 +281,8 @@ function Chat.update(self: Controller, dt: number)
 				-- Twentieths keep a slow approach from rebuilding every frame; your own is always clear.
 				local nearness = if mine then 1 else math.clamp((NAME_FAR - vector.magnitude(foot - here)) / (NAME_FAR - NAME_NEAR), 0, 1)
 				local opacity = math.round((NAME_FAINT + (1 - NAME_FAINT) * nearness) * 20) / 20
+				-- A shop look stays nearly whole far off: its plate and colour should read as bought.
+				if look then opacity = math.max(opacity, LOOK_FAINT) end
 				table.insert(points, foot)
 				table.insert(anchors, {id, name, opacity, roles, false, look})
 			end

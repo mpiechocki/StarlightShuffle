@@ -167,6 +167,7 @@ local function adopt(self: Controller, identity: Net.Identity, id: number, root:
 		identity = identity, controller = controller, replica = nil, dressed = nil, layered = false, arriving = arriving,
 		glow = nil, glowLevel = 0 }
 	self.avatars[identity.session], self.controlled[id] = avatar, controller
+	Looks.set(identity.player, identity.look)
 	self.rostered = false
 	-- Reports name the assignment they were made in, so stale ones are dropped.
 	controller.prediction = Prediction.new(controller.state, controller.mesh, { clock = function(): number return self.now end,
@@ -192,7 +193,10 @@ local function sync(self: Controller)
 			local mine = self.me ~= nil and (self.me :: Me).id == identity.session
 			local avatar = self.avatars[identity.session]
 			if not avatar or avatar.record ~= id or avatar.mine ~= mine then adopt(self, identity, id, root, mine)
-			elseif avatar.identity ~= identity then avatar.identity, self.rostered = identity, false end
+			elseif avatar.identity ~= identity then
+				avatar.identity, self.rostered = identity, false
+				Looks.set(identity.player, identity.look)
+			end
 		end
 	end
 	for session, avatar in self.avatars do

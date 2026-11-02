@@ -176,7 +176,7 @@ return {
 			local list: {Rules.Participant} = {}
 			for _, pt in participants do
 				table.insert(list, { id = pt.id, name = pt.name, bot = pt.bot, outfit = pt.outfit, doll = pt.doll, room = pt.room, seat = pt.seat,
-					draw = pt.draw, forfeited = pt.forfeited })
+					draw = pt.draw, forfeited = pt.forfeited, account = if pt.player then pt.player.player_id else nil })
 			end
 			local actors: {Rules.Actor} = {}
 			if room then for _, seat in room.seats do table.insert(actors, actorOf(seat)) end end

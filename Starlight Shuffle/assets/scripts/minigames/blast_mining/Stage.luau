@@ -29,6 +29,7 @@ local Rules = require("./Rules")
 local Art = require("./Art")
 local Assets = require("./Assets")
 local AvatarImage = require("../../widgets/AvatarImage")
+local PlayerTag = require("../../widgets/PlayerTag")
 local GameUi = require("../../widgets/GameUi")
 
 local C = Rules.CONFIG
@@ -242,6 +243,12 @@ local function miners(model: Model): w.Widget
 					left = s.x - box / 2 + dx, top = s.base - s.height - bob + dy, width = box, height = s.height,
 					child = w.Opacity({opacity = if s.side then 0.74 else 1,
 						child = AvatarImage.body(if miner then miner.outfit else nil, box, s.height)})}))
+				-- Their name at their feet, in their shop look (widgets/PlayerTag).
+				if miner then
+					table.insert(children, w.Positioned({key = w.ValueKey({value = "name" .. s.stream}),
+						left = s.x - 80, width = 160, top = s.base + 2, child = w.Center({child = w.Opacity({opacity = if s.side then 0.8 else 1,
+							child = PlayerTag({player = miner.player, name = miner.name, size = if s.side then 9 else 11, maxWidth = 150})})})}))
+				end
 			end
 			for _, e in model.effects do
 				local s: Slot? = nil

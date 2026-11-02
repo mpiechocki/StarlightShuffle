@@ -27,6 +27,7 @@ local Rules = require("./Rules")
 local Assets = require("./Assets")
 local Art = require("./Art")
 local AvatarImage = require("../../widgets/AvatarImage")
+local PlayerTag = require("../../widgets/PlayerTag")
 local GameUi = require("../../widgets/GameUi")
 
 local C = Rules.CONFIG
@@ -317,6 +318,13 @@ local function avatars(model: Model, list: {View}, W: number, H: number): {w.Wid
 			end
 			table.insert(out, w.Positioned({key = w.ValueKey({value = "avatar" .. v.player}), left = g.x - width / 2 + shake,
 				top = g.base - g.height + bob(model, v), width = width, height = g.height, child = w.IgnorePointer({child = body})}))
+			-- The near ones' names at their feet, in their shop look (widgets/PlayerTag).
+			if not v.distant then
+				table.insert(out, w.Positioned({key = w.ValueKey({value = "name" .. v.player}), left = g.x - 80, width = 160,
+					top = g.base + 2 + bob(model, v), child = w.IgnorePointer({child = w.Center({child = w.Opacity({
+						opacity = if v.side then 0.85 else 1,
+						child = PlayerTag({player = pt.player, name = pt.name, size = if v.side then 9 else 11, maxWidth = 150})})})})}))
+			end
 		end
 	end
 	return out

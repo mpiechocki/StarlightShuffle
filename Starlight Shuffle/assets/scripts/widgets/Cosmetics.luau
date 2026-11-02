@@ -392,7 +392,8 @@ function Cosmetics.label(text: string, names: string?, plates: string?, t: numbe
 	local plate = Looks.plate(plates)
 	local name = Cosmetics.name(text, names, t, { size = size, ink = if plate and plate.ink then plate.ink else ink,
 		outline = if plate then plate.outline else nil, soft = plate == nil })
-	return Cosmetics.plate(name, plates, t, { scale = size / 14, minWidth = if plate then size * 7 else nil, maxWidth = maxWidth })
+	return Cosmetics.plate(name, plates, t, { scale = size / 14,
+		minWidth = if plate then math.min(size * 7, maxWidth or math.huge) else nil, maxWidth = maxWidth })
 end
 
 -- Avatar glow ----------------------------------------------------------

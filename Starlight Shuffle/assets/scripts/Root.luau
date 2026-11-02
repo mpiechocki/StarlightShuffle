@@ -30,6 +30,7 @@ local WallLabels = require("./widgets/WallLabels")
 local LobbyChat = require("./widgets/LobbyChat")
 local Shop = require("./client/Shop")
 local ShopPanel = require("./widgets/ShopPanel")
+local Looks = require("./client/Looks")
 
 --@property
 local title: string = "Starlight Shuffle"
@@ -141,6 +142,8 @@ return engine.defineScript({
 			-- The viewer's look settings, and in a mini-game only styled name tags.
 			local prefs = shop:prefs()
 			if multiplayer then multiplayer.reduceEffects = prefs.effects end
+			Looks.setStill(prefs.motion)
+			Looks.tick(dt)
 			if chat then
 				local round = if place then place.round else nil
 				chat.stillLooks = prefs.motion

@@ -61,7 +61,8 @@ results, when someone left, or a break or an intro that ends short) sends everyo
 back to the lobby they came from, still checked in; a mini-game already playing
 plays on when someone leaves. There is no waiting room: the group goes from the
 lobby straight into the mini-game, whose intro starts as the first of them lands
-(at least 8 s, so the rest land during it); if the group is still short when it
+(4 s longer than usual, so the rest land during it; the mini-game itself is set
+up once they are all there and their outfits are known); if the group is still short when it
 ends, they go back to the lobby the same way.
 
 **Joining a cycle already running.** Every cycle publishes its phase, mini-game,
@@ -164,8 +165,13 @@ stars, rosettes and ornaments; the currency icons are the supplied pixel art).
   weekly tokens it makes redundant. The tab shows your multiplier, running booster
   and tokens; the other tabs don't.
 - **Wearing it.** Equipping saves at once and is broadcast on your avatar's
-  identity: name tags show the name style and plate (your own too while you wear
-  one, and during mini-games only styled tags show); the glow is a halo of soft
+  identity: name tags in the lobby show the name style and plate (your own too
+  while you wear one; a styled tag stays at least 85% visible however far away),
+  and every mini-game's figures carry the same tag (`widgets/PlayerTag`, which
+  reads everyone's look from `client/Looks`): Blast Mining, Lucky Shot and
+  Starcatchers name every figure near you, and Star Pass and Pillow Fight swap
+  their own name pills for it when the player wears a look. Head to Head shows
+  only heads on its tiles, so it has no tags; the glow is a halo of soft
   particles on a sheet just behind the avatar, turned to the camera and sized to the
   outfit's drawn bounds, so the outfit hides its middle (the `aura` child of the
   avatar prefab, placed by `client/Multiplayer`; the avatar renderer has no outline,
