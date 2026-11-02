@@ -27,6 +27,8 @@ local list: {Game} = {
 	-- Reveal, countdown and 120 s of play (it ends itself sooner with one room).
 	{ id = "pillow_fight", title = "Pillow Fight", blurb = "Aim, hold and throw. Red ! means dodge.",
 		scene = "scene:pillow_fight", duration = 127, intro = 15 },
+	{ id = "starcatchers", title = "Starcatchers", blurb = "Throw your net, catch stars, dodge satellites.",
+		scene = "scene:starcatchers", duration = 60, intro = 8 },
 }
 
 local byId: {[string]: Game} = {}

@@ -102,6 +102,8 @@ The cycle plays, in order:
   played in waves until one player is left. See below.
 - **Pillow Fight** (`pillow_fight`, fifth): a two-minute free-for-all in rooms of three
   or four, with filler bots, one winner per room. See below.
+- **Starcatchers** (`starcatchers`, sixth): 60 s of throwing a small net into your own
+  stream of drifting stars, dodging satellites. See below.
 
 An empty cycle waits 3 s after its first arrival before announcing a mini-game, so a
 group sent together all take part in it.
@@ -329,6 +331,42 @@ stun, knockouts, respawn protection, dodge windows, room isolation and junk inte
 simultaneous impacts and the end cutoff, every tie-break level, results and rewards
 (once, never to bots), reproducible bots, reconnects and forfeits, latecomers and
 aborted rounds.
+
+### Starcatchers
+
+Files: `minigames/starcatchers/` holds `Rules` (versioned tuning, the star and satellite
+streams, the net's physics and collisions, the lineup, wire format), `Round` (the
+authoritative round; `Server` adapts the cycle's context to it), `Client`, `Stage`,
+`Art` (stars, constellations, satellites, moon platforms, the hand net) and `Assets`
+with `SceneAssets`. The galaxy backdrop is `assets/textures/starcatchers/galaxy.png`
+(original and its art-direction notes in `art/starcatchers/`).
+`tools/starcatchers_audio.py` renders the reference's celestial loop and the hook, bank
+and satellite-hit sounds.
+
+- **Your own stars.** Every participant has their own stream from the match seed and
+  their seat, through an exact integer hash (server and client agree to the bit). Four
+  stars a wave every 1.2 s (a low +1 star, a high +3 gold or +5 constellation, a middle
+  and a mixed one), about 200 a round, 8 to 15 on screen; a satellite about every 4.5 s.
+  Nobody shares or takes anyone's stars.
+- **The net.** A press anywhere throws it (0.86 up, gravity 0.32); a release, the top
+  of the throw or a catch brings it home (–1.65). One star per net, scored only when it
+  gets home before the end: its value plus a streak bonus of `min(3, streak // 3)`. A
+  satellite touching the net's actual position drops the catch, resets the streak and
+  tangles the net for 1.2 s; banked points stay. A fresh press is needed for each throw.
+- **Authority.** The server simulates every net in 40 ms substeps and judges each throw
+  and release. Your client predicts your own net and replaces the prediction with each
+  server update; points, streaks and effects come only from the server.
+- **Lineup.** One shuffled, wrapping lineup per round: your two neighbours stand at the
+  edges and up to six more (offsets ±2, ±3, ±4) small, faint and blurred in the
+  distance. Each net update goes only to its owner and the players who show it.
+- **Results.** The whole match ranks by the shared tie policy; the top three take 5, 3
+  and 2 Starlights if they brought home at least one star.
+
+`tests/starcatchers_test.luau` checks the hash, star density and wave composition,
+satellite timing, the throw, top and return times, one carried star and banking, the
+streak bonus, satellite hits and the tangle, independent streams, the lineup and
+distant players, the update format, intent validation and visibility, results and
+payouts, reconnects and latecomers.
 
 ### Adding a mini-game
 

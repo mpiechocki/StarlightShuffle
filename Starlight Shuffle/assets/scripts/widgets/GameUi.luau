@@ -102,11 +102,11 @@ function GameUi.portrait(child: w.Widget): w.Widget
 	return w.ClipRRect({borderRadius = p.BorderRadius.circular(9), child = w.Container({color = color(0x33ffffff), child = child})})
 end
 
--- The results card over a dim scrim: THAT'S A WRAP above [children], which
--- scroll inside the card when they do not fit.
-function GameUi.wrap(children: {w.Widget}): w.Widget
+-- The results card over a dim scrim: THAT'S A WRAP (or [overline]) above
+-- [children], which scroll inside the card when they do not fit.
+function GameUi.wrap(children: {w.Widget}, overline: string?): w.Widget
 	local content: {w.Widget} = {
-		w.Text({data = "THAT'S A WRAP", style = style(10, GameUi.MUTED, ui.FontWeight.w800, 2)}),
+		w.Text({data = overline or "THAT'S A WRAP", style = style(10, GameUi.MUTED, ui.FontWeight.w800, 2)}),
 		w.SizedBox({height = 12}),
 	}
 	for _, child in children do table.insert(content, child) end
@@ -124,7 +124,7 @@ end
 
 -- `metric` replaces the points text (Star Pass shows passes).
 export type PodiumRow = { place: number, name: string, outfit: {number}?, points: number, mine: boolean, metric: string? }
-export type Podium = { heading: string, summary: string, rows: {PodiumRow}, footer: string }
+export type Podium = { heading: string, summary: string, rows: {PodiumRow}, footer: string, overline: string? }
 
 -- The results: THAT'S A WRAP, an italic heading, one summary line and up to
 -- three podium rows (medal, portrait, name or "you", points).
@@ -151,7 +151,7 @@ function GameUi.podium(props: Podium): w.Widget
 		w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = rows}),
 		w.SizedBox({height = 6}),
 		w.Text({data = props.footer, textAlign = ui.TextAlign.center, style = style(12, GameUi.MUTED, ui.FontWeight.w700)}),
-	})
+	}, props.overline)
 end
 
 return table.freeze(GameUi)

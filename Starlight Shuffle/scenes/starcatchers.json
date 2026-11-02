@@ -1,0 +1,338 @@
+{
+  "version": 2,
+  "name": "starcatchers",
+  "activeCamera": "camera-main",
+  "environment": {
+    "background": 2630468,
+    "fogNear": 30.0,
+    "fogFar": 70.0,
+    "envDiv": 2.0,
+    "renderingPreset": {
+      "library": "moonbase.standard",
+      "revision": "1",
+      "preset": "pixel"
+    },
+    "effects": {}
+  },
+  "settings": {
+    "aoCell": 0.3,
+    "lightmapDensity": 10.0,
+    "bakeSamples": 128,
+    "bakeBounces": 2,
+    "probeSpacing": 1.0,
+    "navCell": 0.1,
+    "navCellHeight": 0.05,
+    "navAgentRadius": 0.3,
+    "navAgentHeight": 1.8,
+    "navMaxClimb": 0.4,
+    "navMaxSlope": 45.0
+  },
+  "entities": [
+    {
+      "id": "camera-main",
+      "name": "Main camera",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          8.0,
+          12.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "Camera",
+          "id": "da6249daa0724451806bbfa85fb6e0b5",
+          "projection": "perspective",
+          "orthoHeight": 10.0,
+          "fov": 45.0,
+          "near": 0.05,
+          "far": 200.0,
+          "zoom": 1.0,
+          "fadeNear": 0.25,
+          "fadeFar": 1.6,
+          "fadeSpeed": 14.0,
+          "fadeMaxSize": 2.5
+        }
+      ]
+    },
+    {
+      "id": "ambient",
+      "name": "Ambient light",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "Light",
+          "id": "b843a16e4ed141bf80f8b401b3ca2666",
+          "kind": "hemisphere",
+          "mode": "realtime",
+          "color": 16312560,
+          "intensity": 1.6,
+          "groundColor": 15190998,
+          "target": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "distance": 20.0,
+          "decay": 1.5,
+          "angle": 0.6,
+          "penumbra": 0.6,
+          "castShadow": false,
+          "shadowMapSize": 1024,
+          "shadowBias": 0.0,
+          "normalBias": 0.03
+        }
+      ]
+    },
+    {
+      "id": "player-spawn",
+      "name": "Player spawn (behind the camera)",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          20.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": []
+    },
+    {
+      "id": "walk-area",
+      "name": "Walk area",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          20.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "LuaScript",
+          "id": "walk-area",
+          "script": "asset:5ccaadf2-4544-4b3f-a958-25f33d846ec8",
+          "enabled": true,
+          "properties": [
+            {
+              "name": "width",
+              "type": {
+                "kind": "number",
+                "optional": false,
+                "list": false
+              },
+              "value": 2.0
+            },
+            {
+              "name": "depth",
+              "type": {
+                "kind": "number",
+                "optional": false,
+                "list": false
+              },
+              "value": 2.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "floor",
+      "name": "Floor",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          -0.2,
+          20.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "MeshRenderer",
+          "id": "1f690a9e0f594cdf9c910c4342122024",
+          "materials": {},
+          "source": "box",
+          "model": "",
+          "hide": "",
+          "overlay": "",
+          "overlayMetres": 1.0,
+          "size": [
+            4.0,
+            0.4,
+            4.0
+          ],
+          "castShadow": true,
+          "receiveShadow": true,
+          "static": false,
+          "lightmapScale": 1.0,
+          "fades": true
+        },
+        {
+          "type": "Material",
+          "id": "509da3b2410e42dea955a331da561453",
+          "assignment": {
+            "shader": {
+              "library": "moonbase.standard",
+              "revision": "1",
+              "shader": "lit"
+            },
+            "overrides": {
+              "color": {
+                "type": "color",
+                "value": 15850466
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "galaxy-assets",
+      "name": "Galaxy art and audio",
+      "enabled": true,
+      "tags": [],
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": [
+        {
+          "type": "LuaScript",
+          "id": "assets",
+          "script": "asset:f30058f9-f89a-4bf1-935f-6947fb54db02",
+          "enabled": true,
+          "properties": [
+            {
+              "name": "galaxy",
+              "type": {
+                "kind": "texture",
+                "binding": "package:moonbase_engine/src/scripting/texture.dart#Texture",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:dbc8cdbf-deb6-46ad-883e-9a140be5d69e"
+            },
+            {
+              "name": "music",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:026b9deb-ba92-4b95-b4ee-905096f6f621"
+            },
+            {
+              "name": "hook",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:af2828de-9323-4561-954d-5acbf66651c6"
+            },
+            {
+              "name": "bank",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:512c1f85-96d1-4bc7-ab80-8789ad1e09e1"
+            },
+            {
+              "name": "snap",
+              "type": {
+                "kind": "audioClip",
+                "binding": "package:moonbase_engine/src/scripting/audio_clip.dart#AudioClip",
+                "optional": true,
+                "list": false
+              },
+              "value": "asset:a57b2d54-5f7f-4ec3-b5f0-ed038759734d"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

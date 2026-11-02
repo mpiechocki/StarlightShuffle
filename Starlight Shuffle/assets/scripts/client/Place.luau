@@ -34,7 +34,8 @@ type Fields = {
 	lineup: Net.Lineup?, lineupOpen: boolean,
 	moving: boolean, failed: Net.Reason?, failedAt: number,
 	connection: string,
-	minigame: Minigame.Minigame?, minigameId: string?,
+	-- The current mini-game's client module, its id and the cycle round it is for.
+	minigame: Minigame.Minigame?, minigameId: string?, minigameRound: number,
 	scene: engine.Scene?,
 	listeners: {() -> ()},
 	onTransferred: (() -> ())?,
@@ -52,16 +53,17 @@ end
 
 local function closeMinigame(self: Controller)
 	local minigame = self.minigame
-	self.minigame, self.minigameId = nil, nil
+	self.minigame, self.minigameId, self.minigameRound = nil, nil, 0
 	if minigame and minigame.dispose then
 		local ok, err = pcall(minigame.dispose)
 		if not ok then print("Mini-game dispose failed: " .. tostring(err)) end
 	end
 end
 
--- The client module for [id], made fresh when the cycle moves on to it.
-local function openMinigame(self: Controller, id: string?)
-	if id == self.minigameId then return end
+-- The client module for [id], made fresh for each cycle round [round] (the
+-- same mini-game twice in a row gets a new one).
+local function openMinigame(self: Controller, id: string?, round: number)
+	if id == self.minigameId and round == self.minigameRound then return end
 	closeMinigame(self)
 	local info, module = Games.get(id), if id then Modules[id] else nil
 	if not info or not module then return end
@@ -79,7 +81,7 @@ local function openMinigame(self: Controller, id: string?)
 	}
 	local ok, made = pcall(module.new, context)
 	if not ok then print(info.id .. " client failed: " .. tostring(made)); return end
-	self.minigame, self.minigameId = made, info.id
+	self.minigame, self.minigameId, self.minigameRound = made, info.id, round
 end
 
 local function reset(self: Controller)
@@ -94,7 +96,7 @@ function Place.new(): Controller
 	local self = setmetatable({
 		place = nil, session = nil, starlights = nil, round = nil, endsAt = 0, paused = false, results = nil,
 		board = nil, boardOpen = false, lineup = nil, lineupOpen = false, moving = false, failed = nil, failedAt = 0,
-		connection = "offline", minigame = nil, minigameId = nil, scene = nil, listeners = {},
+		connection = "offline", minigame = nil, minigameId = nil, minigameRound = 0, scene = nil, listeners = {},
 		onTransferred = nil, unsubscribe = nil, unwatch = nil, shownSeconds = -1,
 	} :: Fields, Place)
 	self.unsubscribe = client.onMessage(function(kind: unknown, a: unknown, ...: unknown)
@@ -109,7 +111,7 @@ function Place.new(): Controller
 			if not round then return end
 			self.round, self.endsAt = round, game.clock() + round.remaining
 			if round.phase == "intro" then self.results = nil end
-			if round.phase == "waiting" then openMinigame(self, nil) else openMinigame(self, round.game) end
+			if round.phase == "waiting" then openMinigame(self, nil, 0) else openMinigame(self, round.game, round.round) end
 			changed(self)
 		elseif kind == Net.PAUSED then
 			if type(a) == "boolean" then self.paused = a; changed(self) end
