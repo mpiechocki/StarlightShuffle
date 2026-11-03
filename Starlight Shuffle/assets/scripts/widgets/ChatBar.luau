@@ -8,7 +8,8 @@
 -- messages carry them as `:name:` codes. Until the chat rules are accepted on
 -- this device, the field and the smiley show them first (widgets/ChatRules).
 -- A [hint] (the lobby's, pointing at the arcade) shows above the card while
--- nothing is open and the keyboard is down.
+-- nothing is open and the keyboard is down. [expanded] starts it with the
+-- history open (a mini-game's chat, opened on purpose).
 --
 -- The history reads like a group chat: messages in a row from one player are
 -- one group, under their head and their name (in their role colour, with
@@ -56,7 +57,7 @@ local HEAD = 28 -- a speaker's thumbnail
 -- Seconds of quiet after which the same player's next message starts a new group.
 local GROUP_GAP = 120
 
-type Props = { read chat: Chat.Controller, read hint: w.Widget? }
+type Props = { read chat: Chat.Controller, read hint: w.Widget?, read expanded: boolean? }
 type Fields = {
 	input: w.InlineWidgetTextEditingController, focus: w.FocusNode, formatter: s.TextInputFormatter,
 	-- The history or the emoji panel is open above the bar (never both);
@@ -270,6 +271,7 @@ return define("ChatBar", {
 			card = nil, below = 0, covered = nil }
 	end,
 	initState = function(self: State)
+		self.open = self.widget.expanded == true
 		local changed = function()
 			if not self.mounted then return end
 			self:setState(function() end)

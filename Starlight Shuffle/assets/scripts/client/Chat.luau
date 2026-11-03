@@ -12,7 +12,14 @@
 -- (Chat.askRules, widgets/ChatRules). Name tags wear their player's name style
 -- and nameplate from the shop (their identity's look, widgets/Cosmetics);
 -- yours shows too while you wear one, and during a mini-game (`cosmeticOnly`)
--- only those tags show.
+-- only those tags show, and no bubbles.
+--
+-- One chat spans the lobby and the mini-games its players are off in
+-- (server/ChatRelay): a speaker in another place has a negative id (no avatar
+-- of theirs is here) and comes with their account and thumbnail. The history
+-- carries over a move between places. In a mini-game the chat is put away
+-- until opened on purpose (Chat.setOpen, from the HUD's chat button); what
+-- others say meanwhile counts as `unread`.
 local client = require("@moonbase/client")
 local preferences = require("@moonbase/preferences")
 local engine = require("@moonbase/engine")
@@ -90,6 +97,12 @@ type Fields = {
 	rulesNext: (() -> ())?, onRules: (() -> ())?,
 	-- Only tags with a shop look (during a mini-game); and whether looks stand still (client/Shop's setting).
 	cosmeticOnly: boolean, stillLooks: boolean,
+	-- Whether the chat is on screen (set by the root: the lobby, or opened);
+	-- opened in a mini-game; others' messages since it was last on screen.
+	shown: boolean, open: boolean, unread: number,
+	-- Our account id, once a message of ours says it: our lines keep it across places.
+	player: number?,
+	watchers: {() -> ()},
 	unsubscribe: (() -> ())?,
 }
 local Chat = {}
@@ -102,9 +115,11 @@ function Chat.new(controls: Controls.Controller, multiplayer: Multiplayer.Contro
 		time = 0, sentAt = nil, serial = 0,
 		lines = {}, said = {}, typing = {}, editedAt = nil, typingSent = false, labels = {}, popping = false,
 		onLinesChanged = nil, onLabelsChanged = nil, onFeedChanged = nil, dismissInput = nil, covered = nil, picked = nil, onPicked = nil,
-		rulesNext = nil, onRules = nil, cosmeticOnly = false, stillLooks = false, unsubscribe = nil,
+		rulesNext = nil, onRules = nil, cosmeticOnly = false, stillLooks = false,
+		shown = true, open = false, unread = 0, player = nil, watchers = {}, unsubscribe = nil,
 	} :: Fields, Chat)
-	self.unsubscribe = client.onMessage(function(kind: unknown, a: unknown, b: unknown, c: unknown, d: unknown, e: unknown)
+	self.unsubscribe = client.onMessage(function(kind: unknown, a: unknown, b: unknown, c: unknown, d: unknown, e: unknown,
+		f: unknown, g: unknown)
 		if kind == Net.CHAT then
 			self.experience = Net.experience(a)
 			return
@@ -119,17 +134,28 @@ function Chat.new(controls: Controls.Controller, multiplayer: Multiplayer.Contro
 		if not from or type(b) ~= "string" or not text then return end
 		self.typing[from] = nil
 		self.serial += 1
-		-- Who it is, while their avatar is here to say: the line keeps it after they go.
-		local speaker = self.multiplayer.avatars[from]
+		-- Who it is: said elsewhere, as the message says; here, while their
+		-- avatar is here to say (the line keeps it after they go).
 		local player, avatar: string? = 0, nil
-		if speaker then
-			player = speaker.identity.player
-			avatar = speaker.identity.avatar or (if speaker.mine then self.multiplayer.avatar else nil)
+		local elsewhere = from < 0
+		if elsewhere then
+			player, avatar = Net.id(f) or -from, Net.avatarId(g)
+		else
+			local speaker = self.multiplayer.avatars[from]
+			if speaker then
+				player = speaker.identity.player
+				avatar = speaker.identity.avatar or (if speaker.mine then self.multiplayer.avatar else nil)
+				if speaker.mine then self.player = player end
+			end
 		end
 		table.insert(self.lines, { key = self.serial, from = from, name = b, text = text, roles = Net.roles(d),
 			player = player, avatar = avatar, at = self.time, id = Net.messageId(e) })
 		if #self.lines > Net.CHAT_KEEP then table.remove(self.lines, 1) end
-		self.said[from] = { text = text, at = self.time }
+		if not elsewhere then self.said[from] = { text = text, at = self.time } end
+		if not self.shown and not self:isMine(from) then
+			self.unread += 1
+			self:changed()
+		end
 		if self.onLinesChanged then self.onLinesChanged() end
 		if self.onFeedChanged then self.onFeedChanged() end
 	end)
@@ -138,7 +164,43 @@ end
 
 function Chat.isMine(self: Controller, from: number): boolean
 	local me = self.multiplayer.me
-	return me ~= nil and me.id == from
+	if me ~= nil and me.id == from then return true end
+	return from < 0 and self.player ~= nil and -from == self.player
+end
+
+-- Tells [watcher] whenever the chat opens or closes, or unread messages come.
+function Chat.watch(self: Controller, watcher: () -> ()): () -> ()
+	table.insert(self.watchers, watcher)
+	return function()
+		local at = table.find(self.watchers, watcher)
+		if at then table.remove(self.watchers, at) end
+	end
+end
+
+function Chat.changed(self: Controller)
+	for _, watcher in table.clone(self.watchers) do watcher() end
+end
+
+-- Opens the chat over a mini-game (it is always open in the lobby), or puts it away.
+function Chat.setOpen(self: Controller, open: boolean)
+	if open == self.open then return end
+	self.open = open
+	if open then self.unread = 0 end
+	if not open then
+		if self.dismissInput then self.dismissInput() end
+		self:quiet()
+	end
+	self:changed()
+end
+
+-- Whether the chat is on screen: nothing said counts as unread while it is.
+function Chat.setShown(self: Controller, shown: boolean)
+	if shown == self.shown then return end
+	self.shown = shown
+	if shown and self.unread > 0 then
+		self.unread = 0
+		self:changed()
+	end
 end
 
 -- Sends [raw] unless it is empty or too long, or the previous message was too
@@ -287,7 +349,7 @@ function Chat.update(self: Controller, dt: number)
 				table.insert(anchors, {id, name, opacity, roles, false, look})
 			end
 			local said, typing = self.said[id], self.typing[id] == true
-			if said or typing then
+			if (said or typing) and not self.cosmeticOnly then
 				-- Over the top of what the outfit draws (its renderer bounds), above where the player stands, so a bag
 				-- or a wing out to one side does not pull it off the head.
 				local bounds = scene.queries:rendererBounds({ entity = entity, includeDescendants = true, camera = camera })
@@ -359,13 +421,18 @@ function Chat.quiet(self: Controller)
 	self.rulesNext = nil
 end
 
--- Another server instance has its own chat and typists (or none, in a
--- cycle): it starts empty.
+-- Another server instance: the same chat, but its own sessions and typists.
+-- The history stays, each line now by its speaker's account (as if said
+-- elsewhere), and the chat starts put away.
 function Chat.reset(self: Controller)
 	self.experience, self.editedAt = nil, nil
-	table.clear(self.lines); table.clear(self.said); table.clear(self.typing)
+	for _, line in self.lines do
+		if line.player > 0 then line.from = -line.player end
+	end
+	table.clear(self.said); table.clear(self.typing)
 	self.typingSent = false
 	self:pick(nil)
+	self:setOpen(false)
 	if self.onLinesChanged then self.onLinesChanged() end
 	if self.onFeedChanged then self.onFeedChanged() end
 end
@@ -375,6 +442,7 @@ function Chat.dispose(self: Controller)
 	self.onLinesChanged, self.onLabelsChanged, self.dismissInput, self.covered = nil, nil, nil, nil
 	self.onFeedChanged = nil
 	self.picked, self.onPicked = nil, nil
+	table.clear(self.watchers)
 	table.clear(self.lines); table.clear(self.said); table.clear(self.typing); table.clear(self.labels)
 end
 

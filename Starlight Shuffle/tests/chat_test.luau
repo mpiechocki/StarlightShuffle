@@ -134,6 +134,80 @@ test.unit("typing shows to others, and a message ends it", function(t)
 	t:equal(fake:got(3, Net.TYPING)[1][2], 2)
 end)
 
+test.unit("allowed messages are shared with the chat's other places; refused and muted ones are not", function(t)
+	local fake = ChatHost.new()
+	fake.answer = function() return ChatHost.relations() end
+	local shared: {Chat.Shared} = {}
+	local host = table.clone(fake.host)
+	host.share = function(message: Chat.Shared) table.insert(shared, message) end
+	local chat = Chat.new(host)
+	local a = fake:player(1, 101, { alias = "Ann", avatar_id = "ann.png" })
+	local m = fake:player(2, 102, { alias = "Mo", muted = true })
+	chat.added(a); chat.added(m)
+	chat.receive(a, Net.SAY, "hi all")
+	t:equal(#shared, 0) -- not before moderation allows it
+	fake.checks[1].done(true)
+	t:equal(#shared, 1)
+	t:equal(shared[1].player, 101); t:equal(shared[1].name, "Ann"); t:equal(shared[1].text, "hi all")
+	t:equal(shared[1].id, "test_1"); t:equal(shared[1].avatar, "ann.png")
+	fake:advance(1)
+	chat.receive(a, Net.SAY, "rude")
+	fake.checks[2].done(false)
+	chat.receive(m, Net.SAY, "muted")
+	t:equal(#shared, 1)
+end)
+
+test.unit("messages from another place reach everyone here who may hear their speaker", function(t)
+	local fake = ChatHost.new()
+	local chat = Chat.new(fake.host)
+	local a, b = fake:player(1, 101), fake:player(2, 102)
+	chat.added(a); chat.added(b)
+	for _, ask in fake.asks do ask.done(ChatHost.relations()) end
+	table.clear(fake.asks)
+	-- A new speaker elsewhere: held until their relations with everyone here come.
+	chat.heard({ player = 900, name = "Far", text = "hello lobby", roles = {}, id = "far_1", avatar = "far.png" })
+	t:equal(#fake:got(1, Net.SAY), 0)
+	t:equal(fake.asks[1].player, 900)
+	chat.heard({ player = 900, name = "Far", text = "second", roles = {} })
+	fake.asks[1].done(ChatHost.relations({ 102 }))
+	local got = fake:got(1, Net.SAY)
+	t:equal(#got, 2)
+	t:equal(got[1][2], -900); t:equal(got[1][4], "hello lobby"); t:equal(got[1][6], "far_1")
+	t:equal(got[1][7], 900); t:equal(got[1][8], "far.png")
+	t:equal(got[2][4], "second"); t:equal(got[2][6], false)
+	-- The blocked pair never hears it.
+	t:equal(#fake:got(2, Net.SAY), 0)
+	-- Known now: the next goes out at once.
+	chat.heard({ player = 900, name = "Far", text = "third", roles = {} })
+	t:equal(#fake:got(1, Net.SAY), 3)
+	-- A joiner's relations include the speaker elsewhere.
+	local c = fake:player(3, 103)
+	chat.added(c)
+	t:truthy(table.find(fake.asks[#fake.asks].among, 900) ~= nil)
+end)
+
+test.unit("a speaker elsewhere whose relations come at once is heard at once", function(t)
+	local fake = ChatHost.new()
+	fake.answer = function() return ChatHost.relations() end
+	local chat = Chat.new(fake.host)
+	local a = fake:player(1, 101)
+	chat.added(a)
+	chat.heard({ player = 900, name = "Far", text = "quick", roles = {} })
+	t:equal(#fake:got(1, Net.SAY), 1)
+end)
+
+test.unit("a speaker elsewhere whose relations never come is heard after a while", function(t)
+	local fake = ChatHost.new()
+	local chat = Chat.new(fake.host)
+	local a = fake:player(1, 101)
+	chat.added(a)
+	fake:advance(6) -- the joiner's own relations time out: it hears everyone
+	chat.heard({ player = 900, name = "Far", text = "anyone?", roles = {} })
+	t:equal(#fake:got(1, Net.SAY), 0)
+	fake:advance(6)
+	t:equal(#fake:got(1, Net.SAY), 1)
+end)
+
 test.unit("chat validators keep one trimmed line, roles and message ids", function(t)
 	t:equal(Net.text(" a\n\tb "), "a b")
 	t:equal(Net.text(""), nil)

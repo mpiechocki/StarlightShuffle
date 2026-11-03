@@ -1,7 +1,11 @@
 --!strict
 --@server
--- The lobby's chat, ported from Sky Lounge's server/Relay: messages and typing,
--- relayed between every pair that may talk. A pair with a block either way
+-- The chat, ported from Sky Lounge's server/Relay: messages and typing,
+-- relayed between every pair here that may talk. One chat spans a lobby and
+-- every mini-game its players are off playing: a message allowed here is also
+-- handed to the host's `share` (server/ChatRelay carries it to those places),
+-- and messages said there arrive through `heard`, for everyone here who may
+-- hear their speaker (typing stays in its own place). A pair with a block either way
 -- never hears from each other (their avatars still share the lobby), and a
 -- joiner hears nobody until its relations arrive (or take too long). Chat
 -- reaches others only once the platform's moderation allows it, in the order
@@ -28,7 +32,12 @@ export type Host = {
 	platform: Social.Social,
 	-- The chat room moderators see.
 	room: () -> Social.Room,
+	-- Hands an allowed message to the other places of this chat, if any.
+	share: ((message: Shared) -> ())?,
 }
+-- A message said in another place of this chat: by account [player] (their
+-- thumbnail's media id [avatar], if any), with the platform's [id], if it keeps it.
+export type Shared = { player: number, name: string, text: string, roles: {string}, id: string?, avatar: string? }
 export type Chat = {
 	added: (player: Player) -> (),
 	removed: (player: Player) -> (),
@@ -37,13 +46,15 @@ export type Chat = {
 	metadataChanged: (player: Player, changed: {string}) -> (),
 	-- Whether [a] and [b] (session ids) hear each other.
 	hears: (a: number, b: number) -> boolean,
+	-- A message said in another place of this chat.
+	heard: (message: Shared) -> (),
 	dispose: () -> (),
 }
 
 -- `id` is the platform's, when it keeps chat.
 type Said = { text: string, id: string?, decided: boolean, allowed: boolean }
 type Peer = {
-	player: Player, id: number, pid: number, name: string, muted: boolean, roles: {string},
+	player: Player, id: number, pid: number, name: string, avatar: string?, muted: boolean, roles: {string},
 	typing: boolean, saidAt: number?,
 	-- Hears nobody until its relations are known; `asked` numbers the queries.
 	ready: boolean, asked: number,
@@ -63,6 +74,10 @@ function Chat.new(host: Host): Chat
 	-- Player ids with a block either way, both ways round.
 	local blocked: {[number]: {[number]: boolean}} = {}
 	local closed = false
+	-- Speakers elsewhere whose relations with everyone here were asked for
+	-- (true once known), and what they said meanwhile, in order.
+	local remote: {[number]: boolean} = {}
+	local held: {[number]: {Shared}} = {}
 
 	local function send(to: {Player}, ...: types.Value)
 		if #to > 0 and not closed then host.send(to, ...) end
@@ -133,6 +148,13 @@ function Chat.new(host: Host): Chat
 				table.insert(among, other.pid)
 			end
 		end
+		-- And whoever spoke from another place: they may speak again.
+		for pid in remote do
+			if not seen[pid] then
+				seen[pid] = true
+				table.insert(among, pid)
+			end
+		end
 		local finished = false
 		local cancel = host.after(RELATIONS_WAIT, function()
 			if finished then return end
@@ -158,6 +180,10 @@ function Chat.new(host: Host): Chat
 					send(audience(peer), Net.SAY, peer.id, peer.name, said.text, Net.roleList(peer.roles), id)
 				else
 					send(audience(peer), Net.SAY, peer.id, peer.name, said.text, Net.roleList(peer.roles))
+				end
+				local share = host.share
+				if share then
+					share({ player = peer.pid, name = peer.name, text = said.text, roles = peer.roles, id = id, avatar = peer.avatar })
 				end
 			end
 		end
@@ -193,6 +219,55 @@ function Chat.new(host: Host): Chat
 		if id then host.platform.moderate(peer.pid, text, host.room(), id, decide) else decide(nil) end
 	end
 
+	-- [message] from elsewhere, to everyone here who may hear its speaker. Its
+	-- speaker has no session here: clients get the negated account id.
+	local function relay(message: Shared)
+		local to: {Player} = {}
+		for _, peer in peers do
+			if peer.ready and peer.pid ~= message.player and not isBlocked(peer.pid, message.player) then
+				table.insert(to, peer.player)
+			end
+		end
+		send(to, Net.SAY, -message.player, message.name, message.text, Net.roleList(message.roles),
+			message.id or false, message.player, message.avatar or false)
+	end
+
+	-- What a speaker elsewhere said while their relations were asked for, in order.
+	local function release(pid: number)
+		local waiting = held[pid]
+		held[pid] = nil
+		if waiting then for _, message in waiting do relay(message) end end
+	end
+
+	-- A new speaker elsewhere: their relations with everyone here first (the
+	-- answer may come at once), what they said held until then.
+	local function meet(pid: number, first: Shared)
+		remote[pid] = false
+		held[pid] = {first}
+		local among: {number} = {}
+		for _, peer in peers do
+			if peer.pid ~= pid and not table.find(among, peer.pid) then table.insert(among, peer.pid) end
+		end
+		local finished = false
+		local function settled(relations: Social.Relations?)
+			if finished or closed then return end
+			finished = true
+			if relations then
+				for _, other in among do setBlocked(pid, other, relations.blocked[other] == true) end
+			end
+			remote[pid] = true
+			release(pid)
+		end
+		local cancel = host.after(RELATIONS_WAIT, function()
+			if not finished then print("Chat relations for a remote speaker timed out; hearing them") end
+			settled(nil)
+		end)
+		host.platform.relations(pid, among, function(relations: Social.Relations?)
+			cancel()
+			settled(relations)
+		end)
+	end
+
 	-- Where [peer]'s reports of others' chat go.
 	local function hello(peer: Peer)
 		local experience = host.platform.experience
@@ -203,6 +278,7 @@ function Chat.new(host: Host): Chat
 		added = function(player: Player)
 			local peer: Peer = {
 				player = player, id = player.session_id, pid = player.player_id, name = Net.name(player.metadata, player.player_id),
+				avatar = Net.avatarId(field(player, "avatar_id")),
 				muted = field(player, "muted") == true, roles = Net.roles(field(player, "display_roles")),
 				typing = false, saidAt = nil, ready = false, asked = 0, pending = {},
 			}
@@ -251,9 +327,20 @@ function Chat.new(host: Host): Chat
 			local x, y = peers[a], peers[b]
 			return x ~= nil and y ~= nil and hears(x, y)
 		end,
+		heard = function(message: Shared)
+			if closed then return end
+			local known = remote[message.player]
+			if known == true then relay(message)
+			elseif known == nil then meet(message.player, message)
+			else
+				local waiting = held[message.player]
+				if waiting then table.insert(waiting, message) end
+			end
+		end,
 		dispose = function()
 			closed = true
 			table.clear(peers)
+			table.clear(held)
 		end,
 	}
 end

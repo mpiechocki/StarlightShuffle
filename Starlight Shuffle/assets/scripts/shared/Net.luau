@@ -42,27 +42,28 @@
 --   server -> client: TESTER, {sandbox, fault}  (on arrival and on change;
 --                     never sent to anyone else)
 --
--- Lobby chat (server/Chat), as in Sky Lounge:
+-- Chat (server/Chat), as in Sky Lounge, one for a lobby and its mini-games:
 --   client -> server: SAY, text  |  TYPING, typing
 --   server -> client: CHAT, experience?  (when you arrive: where reports go)
 --                     SAY, sessionId, name, text, roles, messageId?
+--                     SAY, -playerId, name, text, roles, messageId | false,
+--                          playerId, avatarId | false  (said in another place)
 --                     TYPING, sessionId, typing
 -- SAY goes to everyone the speaker may talk to, the sender included, with the
--- speaker's roles (Net.roles); nothing said is kept, so a joiner's chat starts
--- empty. TYPING reports when a player starts or stops writing; a SAY also ends
+-- speaker's roles (Net.roles); a speaker in another place of the chat comes
+-- with a negative id (no avatar of theirs is here), their account and
+-- thumbnail. Nothing said is kept, so a joiner's chat starts empty. TYPING reports when a player starts or stops writing; a SAY also ends
 -- it. Where the platform moderates chat it keeps every message, and players
 -- report one by its `messageId` within CHAT's `experience`; only other
 -- players' copies carry it.
 --
--- Cycle (server/Cycle): mini-games one after another, in a loop.
+-- Mini-game place (server/Cycle): one mini-game for a group from the lobby.
 --   client -> server: PAUSE, paused  (the HUD's Pause/Play button)
 --                     GAME, ...  (the current mini-game's own messages)
 --   server -> client: ROUND, round  (the phase, game and time left; again on change)
 --                     PAUSED, paused  |  RESULTS, results  |  MOVING
 --                     GAME, gameId, ...  (the current mini-game's own messages)
--- Between mini-games the cycle takes a break in the lobby scene, where the
--- lobby chat (SAY, TYPING) is open.
--- A paused player goes back to a lobby when the current mini-game ends.
+-- Everyone goes back to the lobby when it ends; a paused player not checked in.
 --
 -- Admins (account ids in the server's startup settings; server/Admins), in
 -- either place:

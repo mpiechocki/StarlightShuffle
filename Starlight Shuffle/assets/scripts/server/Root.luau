@@ -32,6 +32,7 @@ local Travel = require("./Travel")
 local Admins = require("./Admins")
 local Lineup = require("./Lineup")
 local Chat = require("./Chat")
+local ChatRelay = require("./ChatRelay")
 local Accounts = require("./Accounts")
 
 -- What runs this place: server/Lobby or server/Cycle.
@@ -51,6 +52,7 @@ local arena: Arena.Arena? = nil
 local cycle: Cycle.Cycle? = nil
 local lobby: Lobby.Lobby? = nil
 local chat: Chat.Chat? = nil
+local relay: ChatRelay.Relay? = nil
 local accounts: Accounts.Accounts? = nil
 
 return server.defineScript({
@@ -105,20 +107,22 @@ return server.defineScript({
 			lobby = hub
 			mode = hub
 		end
-		local talk = Chat.new({
+		-- One chat for a lobby and the mini-games its players are off in
+		-- (server/ChatRelay), named by the lobby: here, or the group's.
+		local talk: Chat.Chat
+		local shared = ChatRelay.new(function(message: Chat.Shared) talk.heard(message) end)
+		relay = shared
+		talk = Chat.new({
 			send = function(to: {types.Player}, ...: types.Value) server.notifyPlayers(to, ...) end,
 			clock = server.clock, after = server.after, platform = Social.new(),
 			room = function() return { id = server.context.instance_id, name = if place == "cycle" then "Mini-games" else "Lobby" } end,
+			share = shared.share,
 		})
 		chat = talk
-		-- Whether chat is open here: in the lobby only.
-		local function chatting(): boolean
-			return place == "lobby"
-		end
-		-- Chat outside the lobby is dropped, but a typist may always stop typing.
+		if place == "lobby" then shared.use(server.context.instance_id) end
 		local function heard(player: server.Player, kind: unknown, a: unknown): boolean
 			if kind ~= Net.SAY and kind ~= Net.TYPING then return false end
-			if chatting() or (kind == Net.TYPING and a == false) then talk.receive(player, kind, a) end
+			talk.receive(player, kind, a)
 			return true
 		end
 		local idle = Travel.idleStop(EMPTY_GRACE[place], function(): boolean return people.count() == 0 end)
@@ -126,6 +130,12 @@ return server.defineScript({
 
 		table.insert(cancels, server.onPlayerAdded(function(player: server.Player)
 			people.added(player)
+			if place == "cycle" then
+				-- The group's lobby names the chat (without one, this place's own).
+				local arrival = player.arrival
+				local from = if arrival then arrival.lobby else nil
+				shared.use(if type(from) == "string" and #from > 0 and #from <= 128 then from else server.context.instance_id)
+			end
 			server.notifyPlayers({player}, Net.HELLO, player.session_id, people.name(player.session_id) or "", place)
 			starlights.total(player.player_id, function(count: number?)
 				if count and player.isActive then total(player, count) end
@@ -166,6 +176,7 @@ return server.defineScript({
 		if cycle then cycle.dispose(); cycle = nil end
 		lobby = nil
 		if chat then chat.dispose(); chat = nil end
+		if relay then relay.dispose(); relay = nil end
 		if accounts then accounts.dispose(); accounts = nil end
 		if arena then arena.dispose(); arena = nil end
 	end,

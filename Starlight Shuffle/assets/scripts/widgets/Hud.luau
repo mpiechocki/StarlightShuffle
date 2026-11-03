@@ -15,6 +15,8 @@
 -- seconds). A mini-game that does not draw its own gets the announcement card
 -- before it and the results card after it; its own HUD (if any) is under all
 -- of it, below the head (GameUi.HEAD).
+-- In a mini-game, a chat button beside Pause/Play opens the chat over everything
+-- (widgets/LobbyChat), with a count of what was said since it was last open.
 -- Admins (either place): a lineup button (in the lobby's head; in a cycle, or
 -- while the lobby counts down, under the Starlights pill) opens widgets/Lineup.
 local w = require("@flutter/widgets")
@@ -24,6 +26,7 @@ local ui = require("@dart/ui")
 local material = require("@icons/material")
 local Games = require("../shared/Games")
 local Place = require("../client/Place")
+local Chat = require("../client/Chat")
 local Style = require("./Style")
 local GameUi = require("./GameUi")
 local Leaderboard = require("./Leaderboard")
@@ -33,8 +36,8 @@ local Lineup = require("./Lineup")
 -- margin and 50 tall card) with a gap.
 local CHAT_BAR = 12 + 50 + 12
 
-type Props = { read place: Place.Controller }
-type Fields = { unlisten: (() -> ())? }
+type Props = { read place: Place.Controller, read chat: Chat.Controller? }
+type Fields = { unlisten: (() -> ())?, unwatch: (() -> ())? }
 type State = w.State<Props, Fields>
 local define = w.StatefulWidget.define :: w.StatefulWidgetFactory<Props, Fields>
 
@@ -112,11 +115,7 @@ local function cycleHead(place: Place.Controller): w.Widget
 	local status = if place.moving then "Heading back to the lobby…"
 		elseif paused then "Sitting out the next mini-game"
 		else phaseLine(place)
-	return w.Row({crossAxisAlignment = w.CrossAxisAlignment.center, children = {
-		w.Expanded({child = headCard(place, status, paused, false)}),
-		w.SizedBox({width = 10}),
-		pauseButton(place),
-	}})
+	return headCard(place, status, paused, false)
 end
 
 -- Whether the lobby is counting down to the next mini-game.
@@ -228,7 +227,29 @@ local function cycleAdminButton(place: Place.Controller): w.Widget
 				child = w.Icon({icon = material.tune_rounded, size = 21, color = if place.lineupOpen then Style.INK else Style.WHITE})})})})})})
 end
 
-local function build(place: Place.Controller): w.Widget
+-- In a mini-game, the chat button beside Pause/Play, with the unread count.
+-- (widgets/LobbyChat's close button takes its place while the chat is open.)
+local CHAT_BUTTON = 44
+local function chatButton(chat: Chat.Controller): w.Widget
+	local unread = chat.unread
+	local children: {w.Widget} = {
+		w.Container({width = CHAT_BUTTON, height = CHAT_BUTTON,
+			decoration = p.BoxDecoration({color = Style.SURFACE, shape = p.BoxShape.circle,
+				border = p.Border.all({color = Style.LINE, width = 1.5})}),
+			child = w.Icon({icon = material.chat_bubble_rounded, size = 21, color = Style.WHITE})}),
+	}
+	if unread > 0 then
+		table.insert(children, w.Positioned({top = -4, right = -6, child = w.Container({
+			constraints = r.BoxConstraints({minWidth = 18}), height = 18, padding = p.EdgeInsets.symmetric({horizontal = 5}),
+			alignment = p.Alignment.center,
+			decoration = p.BoxDecoration({color = Style.GOLD, borderRadius = p.BorderRadius.circular(9)}),
+			child = Style.text(if unread > 9 then "9+" else tostring(unread), Style.style(11, Style.INK, ui.FontWeight.w900))})}))
+	end
+	return w.GestureDetector({key = w.ValueKey({value = "chat-open"}), onTap = function() chat:setOpen(true) end,
+		child = w.Opacity({opacity = if chat.open then 0 else 1, child = w.Stack({clipBehavior = ui.Clip.none, children = children})})})
+end
+
+local function build(place: Place.Controller, chat: Chat.Controller?): w.Widget
 	local layers: {w.Widget} = {}
 	local inCycle = place.place == "cycle"
 	if inCycle then
@@ -246,10 +267,10 @@ local function build(place: Place.Controller): w.Widget
 	if inCycle and (clock or place:minigameOwnsHud()) then
 		-- A mini-game is on: the timer says how long, the mini-game the rest.
 		table.insert(head, w.Spacer({}))
-		table.insert(head, pauseButton(place))
 	elseif inCycle then
 		table.insert(head, w.SizedBox({width = 10}))
 		table.insert(head, w.Expanded({child = cycleHead(place)}))
+		table.insert(head, w.SizedBox({width = 10}))
 	elseif countingDown(place) then
 		-- The countdown takes the head's middle; the lineup button goes under the pill.
 		table.insert(head, w.SizedBox({width = 10}))
@@ -260,6 +281,13 @@ local function build(place: Place.Controller): w.Widget
 		table.insert(head, w.Spacer({}))
 		adminButton(place, head)
 		table.insert(head, Style.roundButton(material.emoji_events_rounded, function() place:openBoard(true) end, false, "leaderboard"))
+	end
+	if inCycle then
+		if chat then
+			table.insert(head, chatButton(chat))
+			table.insert(head, w.SizedBox({width = 8}))
+		end
+		table.insert(head, pauseButton(place))
 	end
 	table.insert(layers, w.SafeArea({child = w.Padding({padding = p.EdgeInsets.all(12),
 		child = w.Align({alignment = p.Alignment.topLeft, child = w.Row({
@@ -294,16 +322,20 @@ local function build(place: Place.Controller): w.Widget
 end
 
 return define("Hud", {
-	createState = function(): Fields return { unlisten = nil } end,
+	createState = function(): Fields return { unlisten = nil, unwatch = nil } end,
 	initState = function(self: State)
-		self.unlisten = self.widget.place:listen(function()
+		local refresh = function()
 			if self.mounted then self:setState(function() end) end
-		end)
+		end
+		self.unlisten = self.widget.place:listen(refresh)
+		local chat = self.widget.chat
+		if chat then self.unwatch = chat:watch(refresh) end
 	end,
 	dispose = function(self: State)
 		if self.unlisten then self.unlisten(); self.unlisten = nil end
+		if self.unwatch then self.unwatch(); self.unwatch = nil end
 	end,
 	build = function(self: State, _context: w.BuildContext): w.Widget
-		return build(self.widget.place)
+		return build(self.widget.place, self.widget.chat)
 	end,
 })

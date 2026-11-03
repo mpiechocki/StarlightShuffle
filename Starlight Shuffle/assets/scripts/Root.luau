@@ -8,7 +8,7 @@
 -- doorway, the room behind it or a cabinet) starts the mini-game cycle and the
 -- leaderboard board on the wall opens the leaderboard; in the cycle, the HUD's head shows the mini-game and its
 -- Pause/Play button. The lobby has a chat as in Sky Lounge (client/Chat,
--- widgets/LobbyChat), and the shop stall opens the shop (client/Shop,
+-- widgets/LobbyChat), the same one in every mini-game behind a HUD button, and the shop stall opens the shop (client/Shop,
 -- widgets/ShopPanel), whose looks show on everyone's name tag and avatar. Moving between places keeps this VM: everything that
 -- belonged to the previous server instance resets. The app's loading screen
 -- stays up until we stand dressed in the first scene.
@@ -127,7 +127,7 @@ return engine.defineScript({
 			WalkControls(walker),
 			WallLabels.View({labels = tags}),
 			LobbyChat({place = here, chat = talk, layer = "under"}),
-			Hud({place = here}),
+			Hud({place = here, chat = talk}),
 			LobbyChat({place = here, chat = talk, layer = "over"}),
 			ShopPanel({shop = store, clock = function(): number return store.time end}),
 		}}))
@@ -147,6 +147,7 @@ return engine.defineScript({
 			if chat then
 				chat.stillLooks = prefs.motion
 				chat.cosmeticOnly = place ~= nil and place.place == "cycle"
+				chat:setShown(place ~= nil and (place.place == "lobby" or chat.open))
 			end
 		end
 		if chat then chat:update(dt) end

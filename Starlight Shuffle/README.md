@@ -92,9 +92,21 @@ mini-game, and the button turns into a gold **Stay**. Everyone goes back to the
 lobby when the results end; you arrive there not checked in (tap the arcade to
 join again). Pressing Stay before then keeps you checked in.
 
-**Lobby chat.** The lobby has a chat like Sky Lounge's, ported from it. A
-mini-game has none (`widgets/LobbyChat`; its server drops chat, and the chat goes
-quiet as you leave the lobby). The chat bar along the bottom (`widgets/ChatBar`)
+**Chat.** The lobby has a chat like Sky Lounge's, ported from it, and it is one
+chat with every mini-game its players are off in: what anyone says in the lobby
+or in any of those mini-games reaches all of them. Each place's `server/Chat`
+moderates its own players' messages; an allowed one is appended to a short list
+in `@moonbase/storage` named by the lobby (`server/ChatRelay`: the last 50, kept
+an hour), with a hint on its channel, and the other places read what is new (on
+the hint, and every 4 s besides) and deliver it to their players, blocks
+included (a speaker elsewhere has their relations with everyone here asked for
+first). Typing dots stay in their own place. On the client a speaker in another
+place has a negative id (no avatar of theirs is here) and comes with their
+account and thumbnail; the history carries over moves between places. In a
+mini-game the chat is put away: a chat button beside Pause/Play, with a count of
+what was said since, opens it over everything (a dimmed backdrop, the history
+open, a close button where the chat button was; `widgets/LobbyChat`), and no
+speech bubbles show over the players there. The chat bar along the bottom (`widgets/ChatBar`)
 sends messages with the app's custom emoji (`:name:` codes, `widgets/EmojiPicker`),
 and its bubble button opens the recent history; the latest lines also show along the
 top left under the head (`widgets/ChatFeed`). Speech bubbles and typing dots float over
