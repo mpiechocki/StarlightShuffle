@@ -30,7 +30,7 @@ test.unit("a break between mini-games names the one coming", function(t)
 		t:equal(round.game, "blast_mining")
 		t:equal(round.remaining, Games.BREAK)
 	end
-	t:equal(Games.BREAK, 10)
+	t:equal(Games.BREAK, 20)
 end)
 
 test.unit("leaderboards survive the wire and bad rows are refused", function(t)

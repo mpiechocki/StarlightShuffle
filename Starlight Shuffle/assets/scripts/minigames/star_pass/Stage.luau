@@ -6,7 +6,9 @@
 -- keyed by player id, so a regroup after eliminations slides everyone to their
 -- new spot (REGROUP_DELAY, then REGROUP) instead of rebuilding the scene; the
 -- eliminated fade upward and are removed. Stars sit at their holders' sides and
--- fly to a new holder in FLIGHT; each burst throws a few tiny stars.
+-- go straight to a new holder while a copy flies there in FLIGHT (fast, then
+-- settling, turning and fading a little, as in the prototype); each burst
+-- throws a few tiny stars.
 --
 -- At the top: the time to the burst (or the countdown, or the next wave) and
 -- how many are still in. Below the field: a holder's large HOLD TO CHARGE
@@ -43,6 +45,10 @@ local function ms(seconds: number): core.Duration return core.Duration({millisec
 
 export type ChargeState = "idle" | "holding" | "waiting" | "charged"
 export type Burst = { player: number, at: number, x: number?, y: number? }
+-- A star flying from one player to another, as in the prototype: a copy flies
+-- over FLIGHT while the star itself is already with the new holder. `star`
+-- names the flight (our own starts as we tap, before the server's PASSED).
+export type Flight = { star: number, from: number, to: number, at: number }
 export type Model = {
 	frame: foundation.ChangeNotifier,
 	changed: foundation.ChangeNotifier,
@@ -56,6 +62,7 @@ export type Model = {
 	batch: Rules.Batch?,
 	departures: {[number]: number}, -- account id -> game.clock() they went
 	bursts: {Burst},
+	flights: {Flight},
 	charge: ChargeState, chargeStartedAt: number, -- game.clock()
 	passing: boolean,
 	standings: {Rules.Standing}?,
@@ -274,13 +281,32 @@ local StarsView = frameWidget("StarPassStars", function(model: Model, layout: La
 				local size = (if front then 53 else 43) * layout.scale
 				local breathe = if model.reduced then 1 else 1 + (if urgent then 0.1 else 0.05) * math.sin(clock * (if urgent then 12 else 4))
 				local s = size * breathe
-				table.insert(children, w.AnimatedPositioned({key = w.ValueKey({value = "star" .. star.id}),
-					left = x - s / 2, top = y - s / 2, width = s, height = s, duration = ms(if model.reduced then 0 else C.FLIGHT),
-					curve = animation.Curves.easeInOut,
+				table.insert(children, w.Positioned({key = w.ValueKey({value = "star" .. star.id}),
+					left = x - s / 2, top = y - s / 2, width = s, height = s,
 					child = w.Container({
 						decoration = p.BoxDecoration({shape = p.BoxShape.circle, boxShadow = {p.BoxShadow({
 							color = color(if urgent then 0x88ffc76d else 0x66fff1c4), blurRadius = if urgent then 18 else 12})}}),
 						child = w.Image({image = game.image(kit.star :: any), fit = p.BoxFit.contain, filterQuality = ui.FilterQuality.none})})}))
+			end
+		end
+		-- Flights over the stars: out fast and settling (an ease-out), turning
+		-- 150 degrees and fading to 60%; none with reduced motion.
+		if not model.reduced then
+			for _, f in model.flights do
+				local t = (clock - f.at) / C.FLIGHT
+				local ax, ay = starAt(model, layout, f.from)
+				local bx, by = starAt(model, layout, f.to)
+				if t >= 0 and t < 1 and ax and ay and bx and by then
+					local e = 1 - (1 - t) * (1 - t)
+					local s = 38 * layout.scale
+					local x, y = ax + (bx - ax) * e, ay + (by - ay) * e
+					table.insert(children, w.Positioned({key = w.ValueKey({value = "flight" .. f.star .. ":" .. f.at}),
+						left = x - s / 2, top = y - s / 2, width = s, height = s,
+						child = w.Opacity({opacity = 1 - 0.4 * e, child = w.Transform.rotate({angle = math.rad(150) * e,
+							child = w.Container({decoration = p.BoxDecoration({shape = p.BoxShape.circle, boxShadow = {p.BoxShadow({
+								color = color(0x66fff0b8), blurRadius = 10})}}),
+								child = w.Image({image = game.image(kit.star :: any), fit = p.BoxFit.contain, filterQuality = ui.FilterQuality.none})})})})}))
+				end
 			end
 		end
 	end

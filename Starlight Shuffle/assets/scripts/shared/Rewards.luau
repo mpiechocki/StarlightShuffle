@@ -1,13 +1,11 @@
 --!strict
--- What a mini-game pays in Starlight. Everyone who takes part and is still
--- there when play ends earns COMPLETE (an active player: they did something in
--- it), and the top three places add PLACES (one placement bonus each). The
--- cycle boosts a player's whole take for a mini-game once, by their highest
--- active booster (shared/Shop), when it is awarded.
+-- What a mini-game pays in Starlight: only its top three places, PLACES
+-- (the same in every mini-game); everyone else earns nothing. The cycle
+-- boosts a player's take for a mini-game once, by their highest active
+-- booster (shared/Shop), when it is awarded.
 local Rewards = {}
 
-Rewards.COMPLETE = 50
-Rewards.PLACES = table.freeze({ 50, 30, 15 })
+Rewards.PLACES = table.freeze({ 50, 25, 10 })
 
 -- The placement bonus for [place] (1-based); 0 off the podium.
 function Rewards.place(place: number): number

@@ -46,7 +46,7 @@ Rules.CONFIG = table.freeze({
 	INSTRUCTIONS = 15, LESSON = 5, -- the cycle's announcement: three five-second examples
 	REVEAL = 4, -- the group reveal, only with more than one room
 	COUNTDOWN = 3,
-	PLAY = 120,
+	PLAY = 60,
 	HEARTS = 3,
 	MIN_CHARGE = 0.18, FULL_CHARGE = 0.9, MAX_CHARGE = 3.5,
 	THROW_COOLDOWN = 1, FLIGHT = 1,
@@ -57,7 +57,6 @@ Rules.CONFIG = table.freeze({
 	HIT_SCORE = 1, KO_SCORE = 3,
 	ROOM = 4, MIN_ROOM = 3,
 	RECONNECT = 8, -- seconds a disconnected human keeps their seat before a bot takes it
-	WINNER_STARLIGHTS = Rewards.PLACES[1], -- every room winner's reward (the cycle's first prize)
 	RATE = 30, -- intents a participant may send per second
 	-- Filler bots: approachable and fallible, on the same rules as everyone.
 	BOT = table.freeze({
@@ -126,6 +125,11 @@ end
 
 -- The longest a round can take after the announcement (the cycle's duration).
 Rules.LONGEST = C.REVEAL + C.COUNTDOWN + C.PLAY
+
+-- Starlights for [place] in a room (shared/Rewards: every mini-game's podium).
+function Rules.prize(place: number): number
+	return Rewards.place(place)
+end
 
 export type Stats = { participant: number, score: number, kos: number, hits: number, deaths: number, draw: number }
 export type TieBreak = "score" | "knockouts" | "hits" | "deaths" | "drawOrder"

@@ -33,7 +33,6 @@ local types = require("@moonbase/types")
 local Task = require("@moonbase/task")
 local Net = require("../shared/Net")
 local Games = require("../shared/Games")
-local Rewards = require("../shared/Rewards")
 local Arena = require("./Arena")
 local Starlights = require("./Starlights")
 local Travel = require("./Travel")
@@ -101,9 +100,6 @@ function Cycle.new(host: Host): Cycle
 	local endsAt = 0 -- server clock when the phase ends
 	local playEnds = 0 -- server clock when play ends (or would)
 	local earned: {[number]: number} = {} -- this mini-game's Starlights by session
-	-- Who did something in this mini-game during its play (sent it a message):
-	-- only they earn its completion reward (shared/Rewards).
-	local acted: {[number]: boolean} = {}
 	-- The mini-game a break announced, and its index in Games.list: its intro plays it.
 	local upcoming: Games.Game?, upcomingIndex = nil, 0
 	-- A mini-game announced but not yet set up: its group is still landing.
@@ -210,7 +206,6 @@ function Cycle.new(host: Host): Cycle
 		upcoming, upcomingIndex = nil, 0
 		index, game, round = nextIndex, nextGame, round + 1
 		table.clear(earned)
-		table.clear(acted)
 		local length = nextGame.intro or Games.INTRO
 		phase, endsAt = "intro", server.clock() + (if arriving then length + LANDING else length)
 		host.arena.load(nextGame.scene)
@@ -288,9 +283,8 @@ function Cycle.new(host: Host): Cycle
 		local bySession: {[number]: server.Player} = {}
 		for session, member in members do
 			local name = host.name(session) or ("Player " .. member.player.player_id)
-			-- Its placement bonuses, plus completing it for an active player still here.
+			-- Its podium prize (shared/Rewards), if any.
 			local amount = earned[session] or 0
-			if member.player.isActive and (acted[session] or amount > 0) then amount += Rewards.COMPLETE end
 			bySession[session] = member.player
 			table.insert(rows, { player = member.player.player_id, name = name, starlights = amount })
 			if amount > 0 then table.insert(awards, { player = member.player.player_id, name = name, amount = amount }) end
@@ -383,7 +377,6 @@ function Cycle.new(host: Host): Cycle
 			if not members[player.session_id] then return end
 			members[player.session_id] = nil
 			earned[player.session_id] = nil
-			acted[player.session_id] = nil
 			host.arena.leave(player)
 			if phase == "intro" or phase == "playing" then call("leave", player) end
 			recount()
@@ -402,7 +395,6 @@ function Cycle.new(host: Host): Cycle
 				local id = ...
 				-- Only the current mini-game hears its own messages, and only during play.
 				if member and game and id == game.id and (phase == "intro" or phase == "playing") then
-					if phase == "playing" then acted[player.session_id] = true end
 					call("receive", player, select(2, ...))
 				end
 				return true

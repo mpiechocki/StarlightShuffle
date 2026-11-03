@@ -45,7 +45,7 @@ end
 
 local function reward(pt: Rules.Participant?): string
 	if pt and pt.bot then return "Bot winner · no Starlights" end
-	return "+" .. C.WINNER_STARLIGHTS .. " Starlights"
+	return "+" .. Rules.prize(1) .. " Starlights"
 end
 
 local function standing(model: Model, placement: Rules.Placement): w.Widget
@@ -123,7 +123,7 @@ function Results.view(model: Model): w.Widget?
 					w.SizedBox({width = 9}),
 					w.Expanded({child = w.Text({data = nameOf(model, room.winner), maxLines = 1, overflow = w.TextOverflow.ellipsis,
 						style = style(13, GameUi.TEXT, ui.FontWeight.w700)})}),
-					w.Text({data = if winner and winner.bot then "bot" else "+" .. C.WINNER_STARLIGHTS,
+					w.Text({data = if winner and winner.bot then "bot" else "+" .. Rules.prize(1),
 						style = style(12, color(0xffffe3ab), ui.FontWeight.w800)}),
 				}})}))
 		end

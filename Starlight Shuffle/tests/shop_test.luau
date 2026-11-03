@@ -107,9 +107,10 @@ test.unit("the highest active multiplier applies, and tokens activate only when 
 end)
 
 test.unit("rewards are boosted once per round, rounded down", function(t)
-	t:equal(Rewards.boosted(Rewards.COMPLETE + Rewards.place(1), 1.5), 150)
-	t:equal(Rewards.boosted(Rewards.COMPLETE + Rewards.place(1), 2), 200)
-	t:equal(Rewards.boosted(Rewards.COMPLETE + Rewards.place(3), 1.5), 97)
+	t:equal(Rewards.place(1), 50); t:equal(Rewards.place(2), 25); t:equal(Rewards.place(3), 10)
+	t:equal(Rewards.boosted(Rewards.place(1), 1.5), 75)
+	t:equal(Rewards.boosted(Rewards.place(1), 2), 100)
+	t:equal(Rewards.boosted(Rewards.place(2), 1.5), 37)
 	t:equal(Rewards.place(4), 0)
 end)
 

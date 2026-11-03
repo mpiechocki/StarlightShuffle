@@ -20,6 +20,7 @@ local m = require("@flutter/material")
 local fonts = require("@fonts/app")
 local material = require("@icons/material")
 local Shop = require("../shared/Shop")
+local Rewards = require("../shared/Rewards")
 local Controller = require("../client/Shop")
 local Cosmetics = require("./Cosmetics")
 local Pressable = require("./Pressable")
@@ -399,7 +400,7 @@ local function inventory(shop: Controller.Controller): w.Widget
 		}))
 	end
 	table.insert(children, gap(12))
-	table.insert(children, txt("Boosts apply to mini-game completion and performance rewards only. They do not stack, and never increase Stars, refunds or grants. Weekly timers continue while you are offline.",
+	table.insert(children, txt("Boosts apply to mini-game podium rewards only. They do not stack, and never increase Stars, refunds or grants. Weekly timers continue while you are offline.",
 		10, MUTED, nil, 5))
 	return w.Container({
 		margin = p.EdgeInsets.only({top = 20}),
@@ -680,8 +681,8 @@ local function testsDialog(shop: Controller.Controller): w.Widget
 			{ "Starlight to 0", function() shop:test("zero") end, "zero" } }),
 		if tester.sandbox then w.SizedBox.shrink({}) else txt("Test Stars work only in editor Play: real Stars are never granted.", 10, NOTICE, nil, 2),
 		heading("MINI-GAME REWARDS (BOOSTED LIKE REAL ONES)"),
-		tools({ { "1st place: 100", function() shop:test("reward", "first") end, "reward-first" },
-			{ "Completion: 50", function() shop:test("reward", "complete") end, "reward-complete" } }),
+		tools({ { "1st place: " .. Rewards.place(1), function() shop:test("reward", "first") end, "reward-first" },
+			{ "3rd place: " .. Rewards.place(3), function() shop:test("reward", "third") end, "reward-third" } }),
 		gap(6),
 		tools({ { "Repeat last reward (no effect)", function() shop:test("repeat_reward", "first") end, "reward-repeat" } }),
 		heading("NEXT STARS PURCHASE"),

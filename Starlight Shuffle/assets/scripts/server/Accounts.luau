@@ -37,6 +37,7 @@ local Economy = require("@moonbase/economy")
 local types = require("@moonbase/types")
 local Net = require("../shared/Net")
 local Shop = require("../shared/Shop")
+local Rewards = require("../shared/Rewards")
 
 local RETRY = 20 -- seconds before an unsettled purchase is asked again while its player is here
 local DELIVER_TRIES = 4
@@ -733,8 +734,8 @@ function Accounts.new(host: Host): Accounts
 					if result.ok then done("Admin test: +" .. amount .. " Starlight granted (not boosted).") else failed("grant", result) end
 				end)
 		elseif action == "reward" or action == "repeat_reward" then
-			-- 1st place (50 + 50) or completion only (50), through the real award and its booster.
-			local base = if argument == "first" then 100 else 50
+			-- A 1st or 3rd place prize, through the real award and its booster.
+			local base = Rewards.place(if argument == "first" then 1 else 3)
 			local id = person.rewardId
 			if action == "reward" or not id then
 				person.rewards += 1

@@ -183,7 +183,7 @@ test.unit("the reveal only runs with several rooms", function(t)
 	t:equal(Rules.phaseAt(two, two.playAt), "playing")
 	t:equal(two.endsAt, two.playAt + C.PLAY)
 	t:equal(Rules.phaseAt(two, two.endsAt), "over")
-	t:equal(Rules.LONGEST, 127)
+	t:equal(Rules.LONGEST, 67)
 end)
 
 test.unit("charges: too short does not throw, 0.9 s throws two hearts, held too long cancels", function(t)
@@ -353,7 +353,7 @@ test.unit("one winner per room by score, knockouts, hits, deaths, then the draw 
 	t:equal(Rules.tieBreak(ranked), "hits")
 end)
 
-test.unit("results: an all-zero room still has one winner, paid once; others see only winners", function(t)
+test.unit("results: an all-zero room still has one winner; its top three are paid once; others see only winners", function(t)
 	local r = round(8)
 	r.fight()
 	r.run(r.schedule().endsAt + 0.1)
@@ -361,8 +361,8 @@ test.unit("results: an all-zero room still has one winner, paid once; others see
 	r.game.finish() -- the cycle's own finish afterwards changes nothing
 	local paid, total = 0, 0
 	for _, n in r.awards do paid += 1; total += n end
-	t:equal(paid, 2) -- one per room (both rooms all human)
-	t:equal(total, 2 * C.WINNER_STARLIGHTS)
+	t:equal(paid, 6) -- the top three of each room (both rooms all human)
+	t:equal(total, 2 * (Rules.prize(1) + Rules.prize(2) + Rules.prize(3)))
 	local p = r.players[1]
 	local results = assert(Rules.results(assert(r.last(Rules.RESULTS, p))[1]))
 	t:equal(#results, 2)
@@ -373,7 +373,7 @@ test.unit("results: an all-zero room still has one winner, paid once; others see
 	local places = {}
 	for _, pl in mine.placements do
 		t:truthy(not places[pl.place]); places[pl.place] = true
-		t:equal(pl.starlights, if pl.place == 1 then C.WINNER_STARLIGHTS else 0)
+		t:equal(pl.starlights, Rules.prize(pl.place))
 	end
 	t:equal(mine.winner, mine.placements[1].participant)
 	t:equal(mine.tieBreak, "drawOrder")
@@ -392,10 +392,15 @@ test.unit("a bot can win its room but is never paid", function(t)
 	t:truthy(r.kinds(p, "throw") > 0)
 	local winner = r.snapshot(p).participants[room.winner :: number]
 	t:truthy(winner.bot)
-	t:equal(r.awards[p.player_id], nil)
+	-- Bots take places but no Starlights; the human is paid for their own place only.
+	local mine = 0
+	for _, pl in room.placements do
+		if pl.participant == r.id(p) then mine = Rules.prize(pl.place) else t:equal(pl.starlights, 0) end
+	end
+	t:equal(r.awards[p.player_id], if mine > 0 then mine else nil)
 	local paid = 0
 	for _ in r.awards do paid += 1 end
-	t:equal(paid, 0)
+	t:equal(paid, if mine > 0 then 1 else 0)
 end)
 
 test.unit("bots are reproducible under a seed", function(t)

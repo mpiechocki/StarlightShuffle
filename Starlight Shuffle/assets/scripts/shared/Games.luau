@@ -24,9 +24,9 @@ local list: {Game} = {
 		scene = "scene:lucky_shot", duration = 45, intro = 10 },
 	{ id = "star_pass", title = "Star Pass", blurb = "Charge your star and pass it on before it bursts!",
 		scene = "scene:star_pass", duration = 300, intro = 10 },
-	-- Reveal, countdown and 120 s of play (it ends itself sooner with one room).
+	-- Reveal, countdown and 60 s of play (it ends itself sooner with one room).
 	{ id = "pillow_fight", title = "Pillow Fight", blurb = "Aim, hold and throw. Red ! means dodge.",
-		scene = "scene:pillow_fight", duration = 127, intro = 15 },
+		scene = "scene:pillow_fight", duration = 67, intro = 15 },
 	{ id = "starcatchers", title = "Starcatchers", blurb = "Throw your net, catch stars, dodge satellites.",
 		scene = "scene:starcatchers", duration = 60, intro = 8 },
 }
@@ -42,7 +42,7 @@ end
 return table.freeze({
 	INTRO = 5,
 	-- Seconds a cycle spends back in the lobby scene between mini-games.
-	BREAK = 10,
+	BREAK = 20,
 	-- No mini-game starts with fewer players than this: a cycle waits for them
 	-- in the lobby scene.
 	MIN_PLAYERS = MIN_PLAYERS,

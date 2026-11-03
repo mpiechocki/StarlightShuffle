@@ -44,7 +44,7 @@ bake again (**Baked lighting** in the editor, or `bake_lighting` over MCP).
 **Cycle.** Plays `shared/Games.luau` in order and loops. Each mini-game goes:
 *intro* (its scene loads, everyone lands in it, "Up next" shows for 5 s) → *playing*
 (its `duration`) → *results* (everyone's Starlights for it, 7 s) → *break*
-(`Games.BREAK`, 10 s back in the lobby scene, where the lobby chat is open). The
+(`Games.BREAK`, 20 s back in the lobby scene, where the lobby chat is open). The
 break picks and names the next mini-game: the HUD's head reads "Up next: …" with
 "Starts in 0:08 · chat until then" and a draining bar, and a big 3, 2, 1 ends it.
 The break runs on the cycle's own server (it is not a transfer to a lobby), so you
@@ -80,7 +80,7 @@ cycle's timer, the same for all of them: "Starts in" through the intro, then "Ti
 left", with a draining bar, amber for the last 10 s (`widgets/Hud`, from
 `client/Place.clock`). A mini-game whose play is not the cycle's playing phase gives
 its own clock (`clock` in `client/Minigame`; Pillow Fight counts down to and through
-its 120 s battle). Mini-games show no time of their own: their top panels (scores,
+its 60 s battle). Mini-games show no time of their own: their top panels (scores,
 Star Pass's burst fuse) sit below the head, from `GameUi.HEAD`.
 
 **Pause/Play.** In the head's right: pressing Pause marks you to leave, and the
@@ -111,10 +111,8 @@ has been empty for 30 s (cycle) or 300 s (lobby).
 
 ## Starlights and the leaderboard
 
-**Rewards** (`shared/Rewards.luau`, configurable there): every player still there
-when a mini-game ends who did something in it (sent it a move during play) earns
-50 for completing it, and the top three add 50, 30 and 15 (one placement bonus
-each; every mini-game's podium uses these). A player who did nothing earns nothing.
+**Rewards** (`shared/Rewards.luau`, configurable there): every mini-game pays its
+top three 50, 25 and 10 Starlights, and nobody else anything.
 
 `server/Starlights.luau` keeps every player's Starlight balance in `@moonbase/storage`:
 a sorted set ranks players by what they have (the shop spends from it, so the
@@ -191,7 +189,7 @@ shop's header that opens **Test tools**; the server checks every use
   history; it counts on the leaderboard), Starlight to 0, and +20,000 test Stars,
   which exist only in editor Play and only in the shop's displayed balance: real
   Stars are never granted.
-- **Rewards:** a simulated 1st place (100 base) or completion (50) through the
+- **Rewards:** a simulated 1st place (50) or 3rd place (10) through the
   real award, boosted by your booster; "Repeat last reward" re-sends the same
   round id and must add nothing.
 - **Next Stars purchase:** normal, refused (not enough Stars), an unknown answer
@@ -261,7 +259,7 @@ The cycle plays, in order:
   with a slingshot. See below.
 - **Star Pass** (`star_pass`, fourth): hot potato with glowing stars,
   played in waves until one player is left. See below.
-- **Pillow Fight** (`pillow_fight`, fifth): a two-minute free-for-all in rooms of three
+- **Pillow Fight** (`pillow_fight`, fifth): a one-minute free-for-all in rooms of three
   or four, with filler bots, one winner per room. See below.
 - **Starcatchers** (`starcatchers`, sixth): 60 s of throwing a small net into your own
   stream of drifting stars, dodging satellites. See below.
@@ -294,7 +292,7 @@ camera; avatars stand behind it.
   client reconciles with taps it already showed. Nine matches complete and lock a
   canvas, with the server's elapsed time and a completion sequence for ties. Play ends
   at 90 s, or when every connected participant has finished.
-- **Podium.** The three fastest completed boards win 50, 30 and 15 Starlights; incomplete
+- **Podium.** The three fastest completed boards win 50, 25 and 10 Starlights; incomplete
   boards never place (prizes: `shared/Rewards`). The podium shows during the cycle's results, then the cycle moves on.
 - **Drops.** A participant who disconnects keeps their canvas, and any finish already
   validated. If they come back to the same cycle before the end, they carry on. The timer
@@ -326,7 +324,7 @@ cached paths) and `Assets` with `SceneAssets` (the art and audio, which ship wit
   stream within ±105 ms. Rock +1, gem +3, bomb −3 (never below zero). The client
   shatters its item at once and undoes that if the server's answer disagrees.
 - **Results.** Points, then whoever reached their final score first, then player id.
-  The top three get 50, 30 and 15 Starlights through the cycle. The results are sent once.
+  The top three get 50, 25 and 10 Starlights through the cycle. The results are sent once.
   A miner who drops keeps their stream, score and slowdown; if they come back to the
   same cycle, a snapshot restores everything without restarting.
 - **Art and audio.** `assets/textures/blast_mining/cave.png` is the supplied cave.
@@ -429,7 +427,7 @@ catch, pass, burst and a quiet loop.
 - **Drops.** A competitor away for 20 s forfeits; their star is removed and the wave
   keeps its burst. Reconnecting before that keeps everything.
 - **Results.** Survivor first, then later eliminations, then passes, then seat. 50,
-  30 and 15 Starlights for the podium. If the 300 s safety timeout in its Games row
+  25 and 10 Starlights for the podium. If the 300 s safety timeout in its Games row
   is ever reached, survivors rank by passes, then seat.
 
 `tests/star_pass_test.luau` checks star supply, wave length and tick pace, target choice
@@ -459,7 +457,7 @@ lullaby, your throw's whoosh, the two-note warning ring, the hit thud and the do
 - **Schedule.** The cycle's 15 s announcement is the how-to card: three five-second
   examples ("Tap a rival to aim.", "Hold. Then release.", "Red ! means dodge."), with
   dots to review one. Then the 4 s group reveal (only with several rooms), 3, 2, 1, and
-  120 s of play. With one room the round ends itself 4 s before the cycle's 127 s.
+  60 s of play. With one room the round ends itself 4 s before the cycle's 67 s.
 - **Rooms.** The roster freezes at the announcement. Up to 4 humans: one room of
   `max(3, H)`; more: `ceil(H / 4)` rooms of four, humans shuffled and dealt round-robin,
   then labelled bots ("Mallow · bot") fill the gaps. Every participant draws a unique
@@ -478,8 +476,8 @@ lullaby, your throw's whoosh, the two-note warning ring, the hit thud and the do
 - **Bots** run on the server through the same checks, with seeded randomness (tuning in
   `Rules.CONFIG.BOT`). They never receive Starlights.
 - **Results.** Each room ranks by score, knockouts, hits, fewer knockouts suffered, then
-  the draw ticket: one winner, unique places. Each human room winner still here gets
-  50 Starlights (the cycle's first prize stands in for the prototype's 100 points). Your
+  the draw ticket: one winner, unique places. Each room's top three, if humans still
+  here, get 50, 25 and 10 Starlights (`shared/Rewards`, as in every mini-game). Your
   room shows first and in full; "Winners from other rooms" lists one winner per other
   room. A room whose humans all left, or a round the cycle ended early, is aborted and
   pays nobody.

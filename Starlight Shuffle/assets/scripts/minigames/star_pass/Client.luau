@@ -10,8 +10,9 @@
 -- it; held long enough, the completion goes out and the server's CHARGED
 -- reveals the PASS buttons. Any change of possession (a pass, a new wave, a
 -- burst, a snapshot) drops whatever hold was going, so nothing carries over to
--- a later catch. A pass waits for the server: PASSED moves the star (the
--- flight is cosmetic), REJECT re-enables the buttons.
+-- a later catch. A pass waits for the server: PASSED moves the star, REJECT
+-- re-enables the buttons. The flight is cosmetic, as in the prototype: a copy
+-- of the star flies to its new holder; our own pass's flight starts as we tap.
 --
 -- Sound: one shared warning tick tied to burstAt, faster as it nears (louder
 -- while we hold a star), silent between waves and at results; only our own
@@ -48,7 +49,7 @@ return {
 		local model: Model = {
 			frame = frame, changed = changed, ready = false, phase = "countdown",
 			startsAt = 0, wave = 0, burstAt = 0, nextWaveAt = 0, players = {}, seats = {}, me = nil, stars = {}, batch = nil,
-			departures = {}, bursts = {}, charge = "idle", chargeStartedAt = 0, passing = false, standings = nil, reduced = false,
+			departures = {}, bursts = {}, flights = {}, charge = "idle", chargeStartedAt = 0, passing = false, standings = nil, reduced = false,
 			round = context.round, nextIn = context.remaining,
 			now = function(self: Model): number return clock:now() end,
 			press = function(self: Model, _pointer: number) end,
@@ -119,6 +120,8 @@ return {
 			model.passing = true
 			sequence += 1
 			context.send(Rules.PASS, sequence, star.id, star.possession, target)
+			-- Off it goes at once; the server's PASSED moves the star itself.
+			table.insert(model.flights, { star = star.id, from = star.holder, to = target, at = game.clock() })
 		end
 
 		local function setStars(stars: {Rules.Star})
@@ -175,6 +178,12 @@ return {
 				model.passing = false
 				sound(Assets.get().pass, 0.5)
 			end
+			-- Everyone else's passes fly now; ours already flew as we tapped.
+			local flown = false
+			for _, f in model.flights do
+				if f.star == passed.star and f.from == passed.from and f.to == passed.to then flown = true end
+			end
+			if not flown then table.insert(model.flights, { star = passed.star, from = passed.from, to = passed.to, at = game.clock() }) end
 			setStars(passed.stars)
 			changed:notifyListeners()
 		end
@@ -288,6 +297,9 @@ return {
 					end
 					for i = #model.bursts, 1, -1 do
 						if t - model.bursts[i].at > C.BURST then table.remove(model.bursts, i) end
+					end
+					for i = #model.flights, 1, -1 do
+						if t - model.flights[i].at > C.FLIGHT then table.remove(model.flights, i) end
 					end
 					if removed then changed:notifyListeners() end
 				end
