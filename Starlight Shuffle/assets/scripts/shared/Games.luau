@@ -1,5 +1,5 @@
 --!strict
--- The mini-games a cycle plays, in order, looping back to the first. Each one
+-- The mini-games the lobby sends groups to, in order, looping back to the first. Each one
 -- is its own scene (`scenes/<scene>.json`) and its own folder under
 -- `minigames/<id>/`: `Server.luau` runs its rules on the cycle's server and
 -- `Client.luau` its HUD and effects. server/Games and client/Games list those
@@ -41,10 +41,10 @@ end
 
 return table.freeze({
 	INTRO = 5,
-	-- Seconds a cycle spends back in the lobby scene between mini-games.
+	-- Seconds the lobby counts down to the next mini-game once a group is back.
 	BREAK = 20,
-	-- No mini-game starts with fewer players than this: a cycle waits for them
-	-- in the lobby scene.
+	-- No mini-game starts with fewer players than this: they wait for more in
+	-- the lobby.
 	MIN_PLAYERS = MIN_PLAYERS,
 	list = table.freeze(list),
 	-- The mini-game with [id], or nil.

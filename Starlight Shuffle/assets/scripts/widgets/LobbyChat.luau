@@ -1,15 +1,15 @@
 --!strict
 --@client
--- The chat's layers of the HUD (client/Chat), shown in the lobby and during a
--- cycle's breaks back in the lobby scene: not while a mini-game is on. `under` is what goes beneath the HUD (name tags
+-- The chat's layers of the HUD (client/Chat), shown in the lobby: not in a
+-- mini-game. `under` is what goes beneath the HUD (name tags
 -- and speech bubbles over avatars, the latest lines along the top left under
 -- the head, and the chat bar along the bottom, with the lobby's hint above it:
 -- tap the arcade to check in for the next mini-game, or once checked in, how
--- many of the Games.MIN_PLAYERS needed are, or with a cycle running, that you
--- join its next mini-game); `over` is what goes above it
+-- many of the Games.MIN_PLAYERS needed are, or with a mini-game on or counting
+-- down, that you join the next one); `over` is what goes above it
 -- (a long-pressed message's menu, and the chat rules before a first message).
 -- Hiding them closes the keyboard, and the chat goes quiet (Chat.quiet): no
--- bubbles or typing left over for the next break. During a mini-game only
+-- bubbles or typing left over for the lobby. During a mini-game only
 -- the name tags of players wearing a shop look stay (client/Chat's
 -- cosmeticOnly, set by the root).
 local w = require("@flutter/widgets")
@@ -28,18 +28,23 @@ local Games = require("../shared/Games")
 
 -- The HUD's head (12 margin, a 52 tall row, a gap): the feed starts below it.
 local FEED_TOP = 12 + 52 + 8
--- Whether the chat shows: in the lobby, and on a cycle's break.
+-- Whether the chat shows: in the lobby.
 local function chatting(place: Place.Controller): boolean
-	local round = place.round
-	return place.place == "lobby" or (place.place == "cycle" and round ~= nil and round.phase == "break")
+	return place.place == "lobby"
 end
 
 -- The lobby's hint, or nil: not while the HUD has a notice there, nor over
--- the leaderboard, nor on a break (there is no arcade to tap).
+-- the leaderboard.
 local function hintText(place: Place.Controller): string?
 	if place.place ~= "lobby" or place.moving or place.failed or place.boardOpen or not place:online() then return nil end
 	local count, need = place.readyCount, Games.MIN_PLAYERS
-	-- A cycle is running: no count to reach, you join its next mini-game.
+	-- Counting down to the next mini-game (the head says which, and when).
+	local round = place.round
+	if round and round.phase == "break" then
+		if place.ready then return "You're in for the next mini-game · tap the arcade to sit it out" end
+		return "Tap the arcade to join the next mini-game"
+	end
+	-- A group from here is playing: no count to reach, you go with them next.
 	if place.cycleRunning then
 		local on = Games.get(place.cycleGame)
 		local now = if on then " · " .. on.title .. " is on now" else ""

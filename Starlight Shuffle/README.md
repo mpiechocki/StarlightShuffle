@@ -3,8 +3,8 @@
 For coding agents and scripting guidance, read [AGENTS.md](AGENTS.md). It explains
 the runtime, bindings, client/server boundaries, UI, components, and project tests.
 
-Players gather in a **lobby**, then play a looping **cycle** of short multiplayer
-**mini-games**, earning **Starlights** that rank them on a **leaderboard** and buy
+Players gather in a **lobby**, go off together to play short multiplayer
+**mini-games** one at a time, and come back to the lobby between them, earning **Starlights** that rank them on a **leaderboard** and buy
 name styles, nameplates and avatar glows in the lobby's **shop**.
 Open this folder in Moonbase, sign in and press **Play** (the arrow beside it sets
 the client count; pick the `lobby` profile to start the way a real launch does).
@@ -16,14 +16,14 @@ Every server instance runs the same server root (`server/Root.luau`) and is one
 
 | Profile | Runs | Seats |
 | --- | --- | --- |
-| `lobby` (initial) | `server/Lobby.luau` in the `lobby` scene. Launches land here. | 24 |
-| `cycle` | `server/Cycle.luau`: the mini-games, one after another. | 16 |
+| `lobby` (initial) | `server/Lobby.luau` in the `lobby` scene. Launches land here, and everyone comes back here between mini-games. | 24 |
+| `cycle` | `server/Cycle.luau`: one mini-game for a group the lobby sent, started for it. | 24 |
 
 **Lobby.** Everyone walks around in their own outfit, as in Sky Lounge, in a pastel
 arcade lounge floating on a cloud under a night sky. Tapping the **arcade** (its
 doorway, the little room behind it or a cabinet; "Join mini-games" floats over it)
-checks the player in for the next mini-game (see Three players); once three are in,
-they go together to a cycle with room, the fullest first, starting one when none has. The **leaderboard**
+checks the player in for the next mini-game (see Three players and Between
+mini-games). The **leaderboard**
 board on the wall beside it, and the trophy button in the HUD, open the leaderboard.
 Tap targets are found by id prefix: `start-…` and `leaderboard-…` (`Root.luau`).
 
@@ -41,39 +41,43 @@ on. Lighting is baked (`scenes/lobby.lighting.bin`): a baked key and fill light 
 stationary glows at every lamp, sconce and star. After moving anything static,
 bake again (**Baked lighting** in the editor, or `bake_lighting` over MCP).
 
-**Cycle.** Plays `shared/Games.luau` in order and loops. Each mini-game goes:
-*intro* (its scene loads, everyone lands in it, "Up next" shows for 5 s) → *playing*
-(its `duration`) → *results* (everyone's Starlights for it, 7 s) → *break*
-(`Games.BREAK`, 20 s back in the lobby scene, where the lobby chat is open). The
-break picks and names the next mini-game: the HUD's head reads "Up next: …" with
-"Starts in 0:08 · chat until then" and a draining bar, and a big 3, 2, 1 ends it.
-The break runs on the cycle's own server (it is not a transfer to a lobby), so you
-chat with the players you are playing with. Arrivals join the mini-game under way,
-unless it is already showing results, or the break.
+**Mini-games.** The lobby picks them: `shared/Games.luau` in order (the admins'
+lineup), looping. Everyone checked in goes together to a new `cycle` place of its
+own, which plays that one mini-game: *intro* (its scene loads, everyone lands in
+it, "Up next" shows for its `intro` seconds) → *playing* (its `duration`) →
+*results* (everyone's Starlights for it, 7 s). Then everyone goes back to the
+lobby they came from (any lobby with room if it has none), still checked in for
+the next one unless they paused. Arrivals join the mini-game under way; once it is
+over, they are sent straight back.
+
+**Between mini-games.** The group's return starts the lobby's countdown
+(`Games.BREAK`, 20 s): the lobby picks and names the next mini-game, the HUD's
+head reads "Up next: …" with "Starts in 0:18 · you're in" (or "· tap the arcade")
+and a draining bar, and for those checked in a big 3, 2, 1 ends it. Everyone in
+the lobby can join it by tapping the arcade, or tap again to sit it out. When it
+ends, everyone checked in goes, if there are at least three; if not, they stay in
+the lobby, checked in, until a third checks in. So everyone in a lobby (up to 24)
+plays together, and the lobby is where they meet between games.
 
 **Three players.** No mini-game starts with fewer than `Games.MIN_PLAYERS` (3)
 players. Tapping the arcade in the lobby checks you in for the next mini-game (tap
 it again to check out); you stay in the lobby, chatting, and the hint above the chat
 bar says how many are in ("You're in! 2 of 3 ready · waiting for 1 more player").
-Once three are checked in, the lobby sends them all together to a cycle
-(`server/Lobby`). A cycle that is short of players before its next mini-game (after
-results, when someone left, or a break or an intro that ends short) sends everyone
-back to the lobby they came from, still checked in; a mini-game already playing
-plays on when someone leaves. There is no waiting room: the group goes from the
-lobby straight into the mini-game, whose intro starts as the first of them lands
-(4 s longer than usual, so the rest land during it; the mini-game itself is set
-up once they are all there and their outfits are known); if the group is still short when it
-ends, they go back to the lobby the same way.
+With no mini-game on or counting down, once three are checked in the lobby sends
+them all at once (`server/Lobby`). There is no waiting room: the group goes from
+the lobby straight into the mini-game, whose intro starts as the first of them
+lands (4 s longer than usual, so the rest land during it; the mini-game itself is
+set up once they are all there and their outfits are known); if the group is
+still short when it ends, they go back to the lobby, still checked in. A mini-game
+already playing plays on when someone leaves.
 
-**Joining a cycle already running.** Every cycle publishes its phase, mini-game,
-player count and when its phase ends in its instance metadata
-(`Travel.publish`), and lobbies look every 2 s (`Travel.cycles`). While a cycle
-with players and room is running, the 3-player count doesn't apply: the hint
-reads "Tap the arcade to join the next mini-game · Lucky Shot is on now", and
-whoever checks in ("You're in! You'll join the next mini-game") is sent during
-that cycle's next break (with at least 4 s of it left), so they land in the
-lobby scene with everyone and play the next mini-game from its start. If that
-transfer fails they stay checked in for the next break.
+**While a group is playing.** Every mini-game place publishes its phase,
+mini-game, player count, when its phase ends and its lobby in its instance
+metadata (`Travel.publish`), and its lobby looks every 2 s (`Travel.cycles`).
+While a group from this lobby is playing, the hint reads "Tap the arcade to join
+the next mini-game · Lucky Shot is on now", and whoever checks in ("You're in!
+You'll join the next mini-game") waits for the group to come back and goes with
+it after the countdown.
 
 **Timer.** Before and during every mini-game the middle of the HUD's head is the
 cycle's timer, the same for all of them: "Starts in" through the intro, then "Time
@@ -83,14 +87,14 @@ its own clock (`clock` in `client/Minigame`; Pillow Fight counts down to and thr
 its 60 s battle). Mini-games show no time of their own: their top panels (scores,
 Star Pass's burst fuse) sit below the head, from `GameUi.HEAD`.
 
-**Pause/Play.** In the head's right: pressing Pause marks you to leave, and the
-button turns into a gold **Stay**. When the current mini-game's results end (or the
-break, if you paused during it) you go back to the lobby you came from (or any lobby
-with room). Pressing Stay before then keeps you in.
+**Pause/Play.** In the head's right: pressing Pause marks you to sit out the next
+mini-game, and the button turns into a gold **Stay**. Everyone goes back to the
+lobby when the results end; you arrive there not checked in (tap the arcade to
+join again). Pressing Stay before then keeps you checked in.
 
-**Lobby chat.** The lobby has a chat like Sky Lounge's, ported from it. The
-mini-game cycle opens it only during its breaks (`widgets/LobbyChat`; the cycle's
-server drops chat at other times, and the chat goes quiet as a break ends). The chat bar along the bottom (`widgets/ChatBar`)
+**Lobby chat.** The lobby has a chat like Sky Lounge's, ported from it. A
+mini-game has none (`widgets/LobbyChat`; its server drops chat, and the chat goes
+quiet as you leave the lobby). The chat bar along the bottom (`widgets/ChatBar`)
 sends messages with the app's custom emoji (`:name:` codes, `widgets/EmojiPicker`),
 and its bubble button opens the recent history; the latest lines also show along the
 top left under the head (`widgets/ChatFeed`). Speech bubbles and typing dots float over
@@ -206,11 +210,12 @@ there; within a run they carry across moves between places.
 
 ## Admins and the mini-game lineup
 
-Admins get a lineup button (sliders icon): in the lobby next to the leaderboard, in a
-cycle under the Starlights pill. It opens a panel listing every mini-game in cycle
-order, the one on now and the one up next marked, each with a tick box. Cycles play
-only the ticked mini-games, in that order, from their next pick, in every cycle
-(at least one stays ticked; **Include all** restores the full cycle). A game that needs
+Admins get a lineup button (sliders icon): in the lobby next to the leaderboard (under
+the Starlights pill while the lobby counts down), in a mini-game under the
+Starlights pill. It opens a panel listing every mini-game in order, the one on now
+and the one up next marked, each with a tick box. Lobbies pick only the ticked
+mini-games, in that order, from their next pick (at least one stays ticked;
+**Include all** restores them all). A game that needs
 more players than are there is still skipped, unless only such games are ticked.
 
 - **Who is an admin:** the account ids under `admins` in the server's startup settings
@@ -219,8 +224,8 @@ more players than are there is still skipped, unless only such games are ticked.
   go there by hand. It holds `22919001` (the editor account used for Play) for now.
   Nobody else sees the button, and the server ignores lineup changes from non-admins.
 - **Where it lives:** `server/Lineup.luau` keeps it in `@moonbase/storage`, so one
-  change reaches every lobby and cycle. A cycle reads it again as a group arrives and
-  during each results. Nothing stored means every mini-game. Like Starlights, local
+  change reaches every lobby and mini-game. A lobby reads it again as each countdown
+  starts. Nothing stored means every mini-game. Like Starlights, local
   Play starts each run with it cleared.
 - **Code:** `server/Admins.luau`, `server/Lineup.luau`, `Games.pick` / `Games.included`
   in `shared/Games.luau`, the ADMIN and LINEUP messages in `shared/Net.luau`, and

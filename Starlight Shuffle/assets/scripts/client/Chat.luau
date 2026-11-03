@@ -346,8 +346,8 @@ function Chat.left(self: Controller, id: number)
 	self.typing[id], self.said[id] = nil, nil
 end
 
--- The chat is put away (a cycle's break is over): bubbles and typing dots go,
--- and if we were typing, we stop; the history stays for the next break.
+-- The chat is put away (off to a mini-game): bubbles and typing dots go, and
+-- if we were typing, we stop; the history stays for the lobby.
 function Chat.quiet(self: Controller)
 	table.clear(self.said); table.clear(self.typing)
 	self.editedAt = nil

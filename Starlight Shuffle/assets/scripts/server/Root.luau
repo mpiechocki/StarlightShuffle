@@ -3,8 +3,9 @@
 -- Every server instance runs this root and is one *place*, by its hosting
 -- profile (project.json):
 --
---   lobby  (the initial profile): server/Lobby. Launches land here.
---   cycle: server/Cycle, the mini-game cycle.
+--   lobby  (the initial profile): server/Lobby. Launches land here, and
+--          everyone comes back here between mini-games.
+--   cycle: server/Cycle, one mini-game for a group the lobby sent.
 --
 -- Both run their scenes and everyone's avatar in server/Arena, know who is
 -- here from server/People, and keep Starlight balances in server/Starlights.
@@ -15,8 +16,7 @@
 -- A place with nobody in it stops itself after a grace (server/Travel).
 -- Admins (server/Admins) hear and set the mini-game lineup in either place
 -- (server/Lineup). The lobby has chat (server/Chat), moderated through the
--- platform (@moonbase/social); a cycle has it too, open only during its
--- breaks in the lobby scene.
+-- platform (@moonbase/social); a mini-game place has none open.
 local server = require("@moonbase/server")
 local scenes = require("@moonbase/scene")
 local Social = require("@moonbase/social")
@@ -49,6 +49,7 @@ local avatar: scenes.Prefab
 local cancels: {() -> ()} = {}
 local arena: Arena.Arena? = nil
 local cycle: Cycle.Cycle? = nil
+local lobby: Lobby.Lobby? = nil
 local chat: Chat.Chat? = nil
 local accounts: Accounts.Accounts? = nil
 
@@ -85,9 +86,10 @@ return server.defineScript({
 		})
 		accounts = shop
 		local mode: Mode
-		-- The admins' lineup of mini-games, with what this cycle plays now and next.
+		-- The admins' lineup of mini-games, with what is on now and next.
 		local lineup = Lineup.new(admins, function(): (string?, string?)
 			if cycle then return cycle.queue() end
+			if lobby then return lobby.queue() end
 			return nil, nil
 		end)
 		lineup.refresh()
@@ -98,7 +100,10 @@ return server.defineScript({
 			cycle = running
 			mode = running
 		else
-			mode = Lobby.new({ arena = world, starlights = starlights })
+			local hub = Lobby.new({ arena = world, starlights = starlights, lineup = lineup.included,
+				refreshLineup = function() lineup.refresh() end, moved = lineup.notify })
+			lobby = hub
+			mode = hub
 		end
 		local talk = Chat.new({
 			send = function(to: {types.Player}, ...: types.Value) server.notifyPlayers(to, ...) end,
@@ -106,12 +111,11 @@ return server.defineScript({
 			room = function() return { id = server.context.instance_id, name = if place == "cycle" then "Mini-games" else "Lobby" } end,
 		})
 		chat = talk
-		-- Whether chat is open here: always in the lobby, during a cycle's breaks.
+		-- Whether chat is open here: in the lobby only.
 		local function chatting(): boolean
-			local running = cycle
-			return place == "lobby" or (running ~= nil and running.phase() == "break")
+			return place == "lobby"
 		end
-		-- Chat outside a break is dropped, but a typist may always stop typing.
+		-- Chat outside the lobby is dropped, but a typist may always stop typing.
 		local function heard(player: server.Player, kind: unknown, a: unknown): boolean
 			if kind ~= Net.SAY and kind ~= Net.TYPING then return false end
 			if chatting() or (kind == Net.TYPING and a == false) then talk.receive(player, kind, a) end
@@ -160,6 +164,7 @@ return server.defineScript({
 		for _, cancel in cancels do cancel() end
 		table.clear(cancels)
 		if cycle then cycle.dispose(); cycle = nil end
+		lobby = nil
 		if chat then chat.dispose(); chat = nil end
 		if accounts then accounts.dispose(); accounts = nil end
 		if arena then arena.dispose(); arena = nil end

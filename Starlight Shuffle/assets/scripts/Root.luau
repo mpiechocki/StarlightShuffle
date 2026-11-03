@@ -145,9 +145,8 @@ return engine.defineScript({
 			Looks.setStill(prefs.motion)
 			Looks.tick(dt)
 			if chat then
-				local round = if place then place.round else nil
 				chat.stillLooks = prefs.motion
-				chat.cosmeticOnly = place ~= nil and place.place == "cycle" and not (round and round.phase == "break")
+				chat.cosmeticOnly = place ~= nil and place.place == "cycle"
 			end
 		end
 		if chat then chat:update(dt) end

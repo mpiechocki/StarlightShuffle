@@ -1,10 +1,11 @@
 --!strict
 --@server
--- Moving players between places (server instances). A place of a profile
--- ("lobby" or "cycle") with room is found among the running instances, the
--- fullest first so players end up together; when none has room, a new one is
--- started. A place that fills before the transfer lands is passed over for the
--- next. These helpers yield: call them inside Task.run.
+-- Moving players between places (server instances). Back to a lobby: the one
+-- they came from, else one with room among the running instances, the fullest
+-- first so players end up together; when none has room, a new one is started.
+-- A place that fills before the transfer lands is passed over for the next.
+-- To a mini-game: always a cycle of its own, started for the group (`start`).
+-- These helpers yield: call them inside Task.run.
 local server = require("@moonbase/server")
 local hosting = require("@moonbase/hosting")
 local Task = require("@moonbase/task")
@@ -63,10 +64,27 @@ function Travel.send(players: {server.Player}, profile: string, data: Data?, pre
 	return false, code
 end
 
+-- Starts a new place of [profile] and transfers [players] there together,
+-- carrying [data]. Returns true once they are on their way; false and the
+-- error code if not.
+function Travel.start(players: {server.Player}, profile: string, data: Data?): (boolean, string?)
+	local active: {server.Player} = {}
+	for _, player in players do
+		if player.isActive then table.insert(active, player) end
+	end
+	if #active == 0 then return true, nil end
+	local ok, err = pcall(function()
+		local destination = hosting.startReady(profile, hosting.operationId()).instance_id
+		hosting.transferAndWait(active, destination, hosting.operationId(), data)
+	end)
+	if ok then return true, nil end
+	return false, Task.failure(err).code
+end
+
 -- A running cycle as its metadata describes it (Travel.publish): its phase, the
--- mini-game on or coming, how many are in it, and when its phase ends
--- (seconds since 1970: os.time, which every instance shares).
-export type Cycle = { id: string, phase: string, game: string?, players: number, ends: number, room: number }
+-- mini-game on, how many are in it, when its phase ends (seconds since 1970:
+-- os.time, which every instance shares) and the lobby its players go back to.
+export type Cycle = { id: string, phase: string, game: string?, players: number, ends: number, lobby: string? }
 
 -- The cycles running now (yields).
 function Travel.cycles(): {Cycle}
@@ -76,7 +94,7 @@ function Travel.cycles(): {Cycle}
 		local players, ends, phase, game = tonumber(m.players), tonumber(m.ends), m.phase, m.game
 		if info.profile_id == "cycle" and info.state == "ready" and type(phase) == "string" and players and ends then
 			table.insert(out, { id = info.instance_id, phase = phase, game = if type(game) == "string" and game ~= "" then game else nil,
-				players = players, ends = ends, room = info.max_connections - info.connections })
+				players = players, ends = ends, lobby = if type(m.lobby) == "string" and m.lobby ~= "" then m.lobby else nil })
 		end
 	end
 	return out
@@ -101,19 +119,6 @@ function Travel.publish(metadata: {[string]: string})
 		end)
 	end
 	try(1)
-end
-
--- Transfers [players] to the place [destination] exactly, carrying [data]
--- (yields). Returns whether they are on their way, and the error code if not.
-function Travel.sendTo(players: {server.Player}, destination: string, data: Data?): (boolean, string?)
-	local active: {server.Player} = {}
-	for _, player in players do
-		if player.isActive then table.insert(active, player) end
-	end
-	if #active == 0 then return true, nil end
-	local ok, err = pcall(function() hosting.transferAndWait(active, destination, hosting.operationId(), data) end)
-	if ok then return true, nil end
-	return false, Task.failure(err).code
 end
 
 -- Stops this place once [empty]() has held for [grace] seconds; call [check]

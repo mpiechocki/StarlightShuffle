@@ -45,7 +45,7 @@
           "maxConnections": 24
         },
         "cycle": {
-          "maxConnections": 16
+          "maxConnections": 24
         }
       }
     }

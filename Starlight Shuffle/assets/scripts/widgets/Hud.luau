@@ -5,18 +5,18 @@
 -- Everywhere: your lifetime Starlights (top left), and a notice while a move
 -- between places is under way or failed.
 -- Lobby: the leaderboard panel
--- (widgets/Leaderboard) when it is open.
--- Cycle: the Pause/Play button in the head (paused, it reads Stay: you go back
--- to the lobby when this mini-game ends). Before and during every mini-game the
+-- (widgets/Leaderboard) when it is open. Between mini-games the head says what
+-- is up next and drains to it (the lobby's countdown), with a big 3, 2, 1 at
+-- the end for those checked in.
+-- Cycle: the Pause/Play button in the head (paused, it reads Stay: you sit out
+-- the next mini-game when this one ends). Before and during the mini-game the
 -- head's middle is the cycle's timer, the same for each one: how long until it
 -- starts, then how long is left (client/Place.clock; amber for the last ten
--- seconds). On a break back in the lobby scene, the head says what is up next
--- and drains to it, with a big 3, 2, 1 at the end. A mini-game that does not
--- draw its own gets the announcement card before it and the results card
--- after it; its own HUD (if any) is under all of it, below the head
--- (GameUi.HEAD).
--- Admins (either place): a lineup button (in the lobby's head; in a cycle
--- under the Starlights pill) opens widgets/Lineup.
+-- seconds). A mini-game that does not draw its own gets the announcement card
+-- before it and the results card after it; its own HUD (if any) is under all
+-- of it, below the head (GameUi.HEAD).
+-- Admins (either place): a lineup button (in the lobby's head; in a cycle, or
+-- while the lobby counts down, under the Starlights pill) opens widgets/Lineup.
 local w = require("@flutter/widgets")
 local p = require("@flutter/painting")
 local r = require("@flutter/rendering")
@@ -58,8 +58,10 @@ local function phaseLine(place: Place.Controller): string
 	end
 	local left = Style.clock(place:remaining())
 	if round.phase == "break" then
-		if here < Games.MIN_PLAYERS then return "Too few players · back to the lobby soon" end
-		return "Starts in " .. left .. " · chat until then"
+		local more = Games.MIN_PLAYERS - here
+		if more > 0 then return "Needs " .. more .. " more checked in · " .. left end
+		if place.ready then return "Starts in " .. left .. " · you're in" end
+		return "Starts in " .. left .. " · tap the arcade"
 	end
 	if round.phase == "intro" then return "Starts in " .. left end
 	if round.phase == "playing" then return left .. " left" end
@@ -83,20 +85,15 @@ local function pauseButton(place: Place.Controller): w.Widget
 			}})})})
 end
 
--- The head of the cycle's HUD while no mini-game is on (waiting, or a break):
--- what is on or coming, draining to it, and the Pause/Play button.
-local function cycleHead(place: Place.Controller): w.Widget
-	local paused, round = place.paused, place.round
-	local resting = round ~= nil and round.phase == "break"
-	local status = if place.moving then "Heading back to the lobby…"
-		elseif paused then (if resting then "Back to the lobby when the break ends" else "Leaving after this mini-game")
-		else phaseLine(place)
+-- The head's card: what is on or coming, a line under it, and (counting
+-- down) a bar draining to it.
+local function headCard(place: Place.Controller, status: string, gold: boolean, counting: boolean): w.Widget
 	local lines: {w.Widget} = {
 		Style.text(title(place), Style.style(17, Style.WHITE, ui.FontWeight.w800), 1, ui.TextAlign.center),
 		w.SizedBox({height = 2}),
-		Style.text(status, Style.style(13, if paused then Style.GOLD else Style.HINT, ui.FontWeight.w600), 1, ui.TextAlign.center),
+		Style.text(status, Style.style(13, if gold then Style.GOLD else Style.HINT, ui.FontWeight.w600), 1, ui.TextAlign.center),
 	}
-	if resting and round then
+	if counting then
 		local left = place:remaining()
 		table.insert(lines, w.SizedBox({height = 7}))
 		table.insert(lines, w.ClipRRect({borderRadius = p.BorderRadius.circular(2), child = w.Container({height = 4,
@@ -104,12 +101,28 @@ local function cycleHead(place: Place.Controller): w.Widget
 				widthFactor = math.clamp(left / Games.BREAK, 0, 1),
 				child = w.Container({color = if left <= 3 then AMBER else Style.GOLD})})})}))
 	end
+	return Style.card(w.Column({mainAxisSize = w.MainAxisSize.min, children = lines}),
+		p.EdgeInsets.symmetric({horizontal = 18, vertical = 10}), 16)
+end
+
+-- The head of the cycle's HUD while its mini-game is not on (the group
+-- landing, or on the way back): what is on, and the Pause/Play button.
+local function cycleHead(place: Place.Controller): w.Widget
+	local paused = place.paused
+	local status = if place.moving then "Heading back to the lobby…"
+		elseif paused then "Sitting out the next mini-game"
+		else phaseLine(place)
 	return w.Row({crossAxisAlignment = w.CrossAxisAlignment.center, children = {
-		w.Expanded({child = Style.card(w.Column({mainAxisSize = w.MainAxisSize.min, children = lines}),
-			p.EdgeInsets.symmetric({horizontal = 18, vertical = 10}), 16)}),
+		w.Expanded({child = headCard(place, status, paused, false)}),
 		w.SizedBox({width = 10}),
 		pauseButton(place),
 	}})
+end
+
+-- Whether the lobby is counting down to the next mini-game.
+local function countingDown(place: Place.Controller): boolean
+	local round = place.round
+	return place.place == "lobby" and round ~= nil and round.phase == "break"
 end
 
 -- The cycle's timer, centred in the head: how long until the mini-game starts,
@@ -122,7 +135,7 @@ local function timer(place: Place.Controller): w.Widget?
 	local urgent = not clock.starting and whole <= URGENT
 	local tint = if urgent then AMBER else Style.WHITE
 	local label = if place.moving then "Heading to the lobby"
-		elseif place.paused then "Then back to the lobby"
+		elseif place.paused then "Then sitting out"
 		elseif clock.starting then "Starts in" else "Time left"
 	return w.IgnorePointer({child = w.SafeArea({child = w.Padding({padding = p.EdgeInsets.only({top = 12}),
 		child = w.Align({alignment = p.Alignment.topCenter, child = w.Container({key = w.ValueKey({value = "cycle-timer"}),
@@ -203,8 +216,8 @@ local function adminButton(place: Place.Controller, head: {w.Widget})
 	table.insert(head, w.SizedBox({width = 10}))
 end
 
--- In a cycle, a smaller one under the Starlights pill: the mini-games keep
--- that edge clear of their own top panels.
+-- In a cycle (and while the lobby counts down), a smaller one under the
+-- Starlights pill: the mini-games keep that edge clear of their own top panels.
 local function cycleAdminButton(place: Place.Controller): w.Widget
 	return w.SafeArea({child = w.Padding({padding = p.EdgeInsets.only({top = 12 + 52 + 8, left = 12 + 4}),
 		child = w.Align({alignment = p.Alignment.topLeft, child = w.GestureDetector({key = w.ValueKey({value = "lineup"}),
@@ -237,6 +250,12 @@ local function build(place: Place.Controller): w.Widget
 	elseif inCycle then
 		table.insert(head, w.SizedBox({width = 10}))
 		table.insert(head, w.Expanded({child = cycleHead(place)}))
+	elseif countingDown(place) then
+		-- The countdown takes the head's middle; the lineup button goes under the pill.
+		table.insert(head, w.SizedBox({width = 10}))
+		table.insert(head, w.Expanded({child = headCard(place, phaseLine(place), place.ready, true)}))
+		table.insert(head, w.SizedBox({width = 10}))
+		table.insert(head, Style.roundButton(material.emoji_events_rounded, function() place:openBoard(true) end, false, "leaderboard"))
 	elseif place.place == "lobby" then
 		table.insert(head, w.Spacer({}))
 		adminButton(place, head)
@@ -246,10 +265,10 @@ local function build(place: Place.Controller): w.Widget
 		child = w.Align({alignment = p.Alignment.topLeft, child = w.Row({
 			crossAxisAlignment = w.CrossAxisAlignment.center, children = head})})})}))
 	if clock then table.insert(layers, clock) end
-	if inCycle and place.lineup then table.insert(layers, cycleAdminButton(place)) end
-	-- The end of a break: 3, 2, 1 and the next mini-game loads.
+	if (inCycle or countingDown(place)) and place.lineup then table.insert(layers, cycleAdminButton(place)) end
+	-- The end of the lobby's countdown: 3, 2, 1 and those checked in go.
 	local round = place.round
-	if inCycle and round and round.phase == "break" and (round.players or 0) >= Games.MIN_PLAYERS
+	if countingDown(place) and round and place.ready and (round.players or 0) >= Games.MIN_PLAYERS
 		and place:remaining() <= 3 and place:remaining() > 0 then
 		table.insert(layers, GameUi.countdown(math.ceil(place:remaining())))
 	end
@@ -261,7 +280,7 @@ local function build(place: Place.Controller): w.Widget
 	local bottom = notice(place)
 	if bottom then
 		-- Above the chat bar while it shows (widgets/LobbyChat).
-		local lift = if place.place == "lobby" or (round and round.phase == "break") then CHAT_BAR else 28
+		local lift = if place.place == "lobby" then CHAT_BAR else 28
 		table.insert(layers, w.IgnorePointer({child = w.SafeArea({child = w.Align({alignment = p.Alignment.bottomCenter,
 			child = w.Padding({padding = p.EdgeInsets.fromLTRB(16, 0, 16, lift), child = bottom})})})}))
 	end
