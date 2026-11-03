@@ -5,9 +5,7 @@
 -- Everywhere: your lifetime Starlights (top left), and a notice while a move
 -- between places is under way or failed.
 -- Lobby: the leaderboard panel
--- (widgets/Leaderboard) when it is open. Back from a mini-game, a summary card
--- says how many Starlights it won you (or that it won you none this time),
--- until tapped away or for a few seconds (client/Place's `earned`). Between mini-games the head says what
+-- (widgets/Leaderboard) when it is open. Between mini-games the head says what
 -- is up next and drains to it (the lobby's countdown), with a big 3, 2, 1 at
 -- the end for those checked in.
 -- Cycle: the Pause/Play button in the head (paused, it reads Stay: you sit out
@@ -27,7 +25,6 @@ local r = require("@flutter/rendering")
 local ui = require("@dart/ui")
 local material = require("@icons/material")
 local Games = require("../shared/Games")
-local Rewards = require("../shared/Rewards")
 local Place = require("../client/Place")
 local Chat = require("../client/Chat")
 local Cosmetics = require("./Cosmetics")
@@ -188,7 +185,7 @@ local function resultsCard(place: Place.Controller): w.Widget?
 		table.insert(rows, w.Padding({padding = p.EdgeInsets.symmetric({vertical = 3}), child = w.Row({children = {
 			w.SizedBox({width = 24, child = Style.text(tostring(i), Style.style(14, Style.FAINT, ui.FontWeight.w700))}),
 			w.Expanded({child = Style.text(row.name, Style.style(15, Style.WHITE, ui.FontWeight.w600))}),
-			w.Icon({icon = material.star_rounded, size = 16, color = Style.GOLD}),
+			Cosmetics.icon("starlight", 16),
 			w.SizedBox({width = 4}),
 			Style.text("+" .. Style.count(row.starlights), Style.style(15, Style.GOLD, ui.FontWeight.w800)),
 		}})}))
@@ -198,46 +195,6 @@ local function resultsCard(place: Place.Controller): w.Widget?
 	end
 	return w.ConstrainedBox({constraints = r.BoxConstraints({maxWidth = 320}), child = Style.card(
 		w.Column({mainAxisSize = w.MainAxisSize.min, children = rows}), p.EdgeInsets.all(18), 20)})
-end
-
--- Back in the lobby: what the last mini-game won you.
-local function summaryCard(place: Place.Controller): w.Widget?
-	local earned = place.earned
-	if place.place ~= "lobby" or not earned or not earned.shownAt then return nil end
-	local info = Games.get(earned.game)
-	local won = earned.starlights > 0
-	local places = Rewards.PLACES
-	local rows: {w.Widget} = {
-		Style.text(string.upper((if info then info.title else "Mini-game") .. " complete"), Style.style(12, Style.HINT, ui.FontWeight.w800, 1.2), 1, ui.TextAlign.center),
-		w.SizedBox({height = 14}),
-		w.Row({mainAxisAlignment = w.MainAxisAlignment.center, children = {
-			w.Opacity({opacity = if won then 1 else 0.45, child = Cosmetics.icon("starlight", 40)}),
-			w.SizedBox({width = 10}),
-			Style.text(if won then "+" .. Style.count(earned.starlights) else "0",
-				Style.style(40, if won then Style.GOLD else Style.FAINT, ui.FontWeight.w900, -0.5)),
-		}}),
-		w.SizedBox({height = 6}),
-		Style.text(if won then (if earned.starlights == 1 then "Starlight won" else "Starlights won") else "No Starlights this time",
-			Style.style(17, Style.WHITE, ui.FontWeight.w800), 1, ui.TextAlign.center),
-		w.SizedBox({height = 6}),
-		Style.text(if won then "Spend them in the shop, or keep climbing the leaderboard."
-			else string.format("Score and finish in the top three to win %d, %d or %d.", places[1], places[2], places[3]),
-			Style.style(13, Style.HINT, ui.FontWeight.w600), 2, ui.TextAlign.center),
-	}
-	if place.starlights then
-		table.insert(rows, w.SizedBox({height = 12}))
-		table.insert(rows, Style.text("Your Starlights: " .. Style.count(place.starlights), Style.style(13, Style.WHITE, ui.FontWeight.w700), 1, ui.TextAlign.center))
-	end
-	table.insert(rows, w.SizedBox({height = 16}))
-	table.insert(rows, w.GestureDetector({key = w.ValueKey({value = "summary-close"}), onTap = function() place:dismissEarned() end,
-		child = w.Container({height = 44, alignment = p.Alignment.center,
-			decoration = p.BoxDecoration({color = Style.GOLD, borderRadius = p.BorderRadius.circular(999)}),
-			child = Style.text("Continue", Style.style(15, Style.INK, ui.FontWeight.w800))})}))
-	return w.Center({child = w.Padding({padding = p.EdgeInsets.all(24), child = w.ConstrainedBox({
-		constraints = r.BoxConstraints({maxWidth = 320}), child = w.GestureDetector({key = w.ValueKey({value = "summary"}),
-			onTap = function() place:dismissEarned() end,
-			child = Style.card(w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = rows}),
-				p.EdgeInsets.fromLTRB(22, 20, 22, 20), 22)})})})})
 end
 
 local function notice(place: Place.Controller): w.Widget?
@@ -356,8 +313,6 @@ local function build(place: Place.Controller, chat: Chat.Controller?): w.Widget
 		table.insert(layers, w.IgnorePointer({child = w.SafeArea({child = w.Align({alignment = p.Alignment.bottomCenter,
 			child = w.Padding({padding = p.EdgeInsets.fromLTRB(16, 0, 16, lift), child = bottom})})})}))
 	end
-	local summary = summaryCard(place)
-	if summary then table.insert(layers, summary) end
 	if place.place == "lobby" and place.boardOpen then
 		table.insert(layers, Leaderboard({place = place}))
 	end

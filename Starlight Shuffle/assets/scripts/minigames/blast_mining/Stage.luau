@@ -341,6 +341,7 @@ local function results(model: Model): w.Widget?
 	end
 	return GameUi.podium({
 		heading = if not mine then "That's a wrap"
+			elseif mine.starlights <= 0 then "Beautifully mined."
 			elseif mine.place == 1 then "First place, lovely!"
 			elseif mine.place <= 3 then "A gem of a round!"
 			else "Beautifully mined.",
@@ -348,6 +349,7 @@ local function results(model: Model): w.Widget?
 			else "Here's who mined the most.",
 		rows = rows,
 		footer = "Back to the lobby in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
+		game = "blast_mining", earned = if mine then mine.starlights else nil,
 	})
 end
 

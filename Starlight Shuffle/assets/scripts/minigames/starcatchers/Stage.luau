@@ -439,11 +439,12 @@ local function results(model: Model): w.Widget?
 	end
 	return GameUi.podium({
 		overline = "THAT'S AN ORBIT",
-		heading = if mine and mine.place == 1 then "First place, starlight!" else "Written in the stars.",
+		heading = if mine and mine.place == 1 and mine.starlights > 0 then "First place, starlight!" else "Written in the stars.",
 		summary = if mine then "You caught " .. mine.score .. (if mine.score == 1 then " point" else " points") .. " of starlight."
 			else "You watched this round.",
 		rows = rows,
 		footer = "Back to the lobby in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
+		game = "starcatchers", earned = if mine then mine.starlights else nil,
 	})
 end
 

@@ -10,9 +10,9 @@ local p = require("@flutter/painting")
 local ui = require("@dart/ui")
 local Rules = require("./Rules")
 local Model = require("./Model")
-local Art = require("./Art")
 local Pieces = require("./Pieces")
 local GameUi = require("../../widgets/GameUi")
+local Cosmetics = require("../../widgets/Cosmetics")
 
 local C = Rules.CONFIG
 local style = GameUi.style
@@ -24,23 +24,6 @@ type Model = Model.Model
 local function nameOf(model: Model, id: number): string
 	local pt = model.participants[id]
 	return if pt then pt.name else "Player"
-end
-
--- A small four-point sparkle over the winner.
-local sparkle: ui.Path? = nil
-local function paintSparkle(canvas: ui.Canvas, size: ui.Size)
-	local path = sparkle
-	if not path then
-		path = ui.Path({})
-		path:moveTo(0, -1); path:quadraticBezierTo(0.12, -0.12, 1, 0); path:quadraticBezierTo(0.12, 0.12, 0, 1)
-		path:quadraticBezierTo(-0.12, 0.12, -1, 0); path:quadraticBezierTo(-0.12, -0.12, 0, -1); path:close()
-		sparkle = path
-	end
-	canvas:save()
-	canvas:translate(size.width / 2, size.height / 2)
-	canvas:scale(size.height / 2, size.height / 2)
-	canvas:drawPath(path :: ui.Path, Art.paint(0xffdc91))
-	canvas:restore()
 end
 
 -- What [room]'s winner was paid (a winner who scored nothing wins none).
@@ -92,7 +75,7 @@ function Results.view(model: Model): w.Widget?
 		table.insert(children, w.Text({data = if watching then "Room " .. ours.room .. " winner" else "Your room winner",
 			textAlign = ui.TextAlign.center, style = style(24, GameUi.TEXT, ui.FontWeight.w700, -0.4, true)}))
 		table.insert(children, w.SizedBox({height = 8}))
-		table.insert(children, w.Center({child = w.SizedBox({width = 22, height = 22, child = Pieces.paint(paintSparkle)})}))
+		table.insert(children, w.Center({child = Cosmetics.icon("starlight", 24)}))
 		table.insert(children, w.Center({child = Pieces.body(winner, 80, 128)}))
 		table.insert(children, w.SizedBox({height = 6}))
 		table.insert(children, w.Text({data = nameOf(model, ours.winner), textAlign = ui.TextAlign.center, maxLines = 2,
@@ -110,6 +93,18 @@ function Results.view(model: Model): w.Widget?
 		table.insert(children, w.Text({data = "No winner and no Starlights this time.", textAlign = ui.TextAlign.center,
 			style = style(13, GameUi.SOFT)}))
 		table.insert(children, w.SizedBox({height = 14}))
+	end
+	-- What it won you (nothing while watching).
+	local mine: number? = nil
+	if not watching then
+		mine = 0
+		for _, placement in ours.placements do
+			if placement.participant == model.me then mine = placement.starlights end
+		end
+	end
+	if mine then
+		table.insert(children, GameUi.earned("pillow_fight", mine))
+		table.insert(children, w.SizedBox({height = 12}))
 	end
 	for _, placement in ours.placements do table.insert(children, standing(model, placement)) end
 	if #ours.forfeits > 0 then

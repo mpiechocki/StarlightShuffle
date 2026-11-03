@@ -21,6 +21,8 @@ local Rules = require("./Rules")
 local Heads = require("./Heads")
 local PlayerTag = require("../../widgets/PlayerTag")
 local Looks = require("../../client/Looks")
+local GameUi = require("../../widgets/GameUi")
+local Cosmetics = require("../../widgets/Cosmetics")
 
 local function color(v: number): ui.Color return ui.Color({value = v}) end
 local function rgb(v: number, alpha: number): ui.Color return ui.Color({value = alpha * 0x1000000 + v}) end
@@ -267,7 +269,8 @@ local function podium(view: View): w.Widget?
 				w.Expanded({child = text(if place.player == view.me then "you" else place.name, style(16, WHITE, ui.FontWeight.w800))}),
 				text(seconds(place.time), style(14, SOFT, ui.FontWeight.w700)),
 				w.SizedBox({width = 10}),
-				w.Icon({icon = material.star_rounded, size = 15, color = GOLD}),
+				Cosmetics.icon("starlight", 16),
+				w.SizedBox({width = 3}),
 				text("+" .. place.starlights, style(14, GOLD, ui.FontWeight.w900)),
 			}}),
 		}))
@@ -286,7 +289,10 @@ local function podium(view: View): w.Widget?
 					fontStyle = ui.FontStyle.italic}), ui.TextAlign.center, 2),
 				w.SizedBox({height = 6}),
 				text(detail, style(14, SOFT, ui.FontWeight.w600), ui.TextAlign.center, 2),
-				w.SizedBox({height = 16}),
+				w.SizedBox({height = 14}),
+				-- What it won you (nothing while watching).
+				GameUi.earned("head_to_head", if mine then mine.starlights elseif meRow then 0 else nil),
+				w.SizedBox({height = 14}),
 				w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = rows}),
 				w.SizedBox({height = 6}),
 				text("Back to the lobby in " .. view.nextIn, style(12, FAINT, ui.FontWeight.w700), ui.TextAlign.center),

@@ -566,13 +566,14 @@ local function results(model: Model): w.Widget?
 	end
 	return GameUi.podium({
 		heading = if not mine or mine.place == 1 then "Written in the stars."
-			elseif mine.place <= 3 then "So close to the stars!"
+			elseif mine.place <= 3 and mine.starlights > 0 then "So close to the stars!"
 			else "Out among the stars.",
 		summary = if not mine then "You watched this match."
 			elseif mine.place == 1 then "You're the last star standing!"
-			else "You placed #" .. mine.place .. " of " .. #standings .. ". Top three win.",
+			else "You placed #" .. mine.place .. " of " .. #standings .. ".",
 		rows = rows,
 		footer = "Back to the lobby in " .. math.max(0, math.ceil(model.nextIn())) .. "s",
+		game = "star_pass", earned = if mine then mine.starlights else nil,
 	})
 end
 

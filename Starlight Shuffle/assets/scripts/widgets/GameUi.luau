@@ -3,14 +3,16 @@
 -- The mini-games' shared chrome, so every game reads as one experience:
 -- theme tokens (translucent plum HUD, velvet-purple results, muted lilac
 -- borders), the HUD panel, the pre-round instruction card and countdown, and
--- the results card, rows and podium. Game-specific HUD content goes inside
--- these pieces.
+-- the results card, rows and podium, with what the mini-game won you
+-- (GameUi.earned). Game-specific HUD content goes inside these pieces.
 local w = require("@flutter/widgets")
 local p = require("@flutter/painting")
 local r = require("@flutter/rendering")
 local ui = require("@dart/ui")
 local fonts = require("@fonts/app")
 local AvatarImage = require("./AvatarImage")
+local Cosmetics = require("./Cosmetics")
+local Earned = require("../client/Earned")
 
 local function color(v: number): ui.Color return ui.Color({value = v}) end
 
@@ -128,9 +130,53 @@ function GameUi.wrap(children: {w.Widget}, overline: string?): w.Widget
 	}})
 end
 
--- `metric` replaces the points text (Star Pass shows passes).
+-- What [game] (its id) won you, for its results: the Starlights given once
+-- the cycle gives them (client/Earned, boosters included), until then
+-- [fallback] (the results' own prize for your place); nothing while watching
+-- (no [fallback] and nothing given).
+type EarnedProps = { read game: string, read fallback: number? }
+type EarnedFields = { listener: (() -> ())? }
+type EarnedState = w.State<EarnedProps, EarnedFields>
+local defineEarned = w.StatefulWidget.define :: w.StatefulWidgetFactory<EarnedProps, EarnedFields>
+local EarnedView = defineEarned("GameUiEarned", {
+	createState = function(): EarnedFields return { listener = nil } end,
+	initState = function(self: EarnedState)
+		local listener = function() if self.mounted then self:setState(function() end) end end
+		self.listener = listener
+		Earned.changed:addListener(listener)
+	end,
+	dispose = function(self: EarnedState)
+		if self.listener then Earned.changed:removeListener(self.listener) end
+	end,
+	build = function(self: EarnedState, _: w.BuildContext): w.Widget
+		local latest = Earned.latest
+		local given = if latest and latest.game == self.widget.game then latest.starlights else self.widget.fallback
+		if given == nil then return w.SizedBox.shrink({}) end
+		local won = given > 0
+		return w.Container({key = w.ValueKey({value = "earned"}), padding = p.EdgeInsets.symmetric({horizontal = 14, vertical = 11}),
+			decoration = p.BoxDecoration({color = if won then GameUi.ROW_MINE else GameUi.ROW, borderRadius = p.BorderRadius.circular(13),
+				border = p.Border.all({color = if won then color(0xffffd98a) else GameUi.BORDER, width = 1})}),
+			child = w.Row({mainAxisAlignment = w.MainAxisAlignment.center, children = {
+				w.Opacity({opacity = if won then 1 else 0.5, child = Cosmetics.icon("starlight", 26)}),
+				w.SizedBox({width = 9}),
+				w.Flexible({child = w.Text({data = if won then "You won +" .. given .. (if given == 1 then " Starlight" else " Starlights")
+					else "No Starlights for you this time", maxLines = 2, textAlign = ui.TextAlign.center,
+					style = style(16, if won then color(0xffffe3ab) else GameUi.SOFT, ui.FontWeight.w900)})}),
+			}})})
+	end,
+})
+
+-- What [game] won you, under a results heading: "You won +25 Starlights" with
+-- the Starlight icon, or that it won you none; [fallback] until it is given.
+function GameUi.earned(game: string, fallback: number?): w.Widget
+	return EarnedView({game = game, fallback = fallback})
+end
+
+-- `metric` replaces the points text (Star Pass shows passes). `game` and
+-- `earned` (your place's prize; nil while watching) show what it won you.
 export type PodiumRow = { place: number, name: string, outfit: {number}?, points: number, mine: boolean, metric: string? }
-export type Podium = { heading: string, summary: string, rows: {PodiumRow}, footer: string, overline: string? }
+export type Podium = { heading: string, summary: string, rows: {PodiumRow}, footer: string, overline: string?,
+	game: string, earned: number? }
 
 -- The results: THAT'S A WRAP, an italic heading, one summary line and up to
 -- three podium rows (medal, portrait, name or "you", points).
@@ -153,7 +199,9 @@ function GameUi.podium(props: Podium): w.Widget
 		w.Text({data = props.heading, style = style(28, GameUi.TEXT, ui.FontWeight.w700, -0.5, true)}),
 		w.SizedBox({height = 10}),
 		w.Text({data = props.summary, style = style(13, GameUi.SOFT)}),
-		w.SizedBox({height = 18}),
+		w.SizedBox({height = 14}),
+		GameUi.earned(props.game, props.earned),
+		w.SizedBox({height = 14}),
 		w.Column({mainAxisSize = w.MainAxisSize.min, crossAxisAlignment = w.CrossAxisAlignment.stretch, children = rows}),
 		w.SizedBox({height = 6}),
 		w.Text({data = props.footer, textAlign = ui.TextAlign.center, style = style(12, GameUi.MUTED, ui.FontWeight.w700)}),

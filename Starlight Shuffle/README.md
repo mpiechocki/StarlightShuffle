@@ -79,12 +79,12 @@ the next mini-game · Lucky Shot is on now", and whoever checks in ("You're in!
 You'll join the next mini-game") waits for the group to come back and goes with
 it after the countdown.
 
-**Summary.** Once a mini-game's prizes are given, each player hears what they
-got (`EARNED`, 0 for nothing). Back in the lobby a card says so: "+25 Starlights
-won", or "No Starlights this time" with what the top three win, and the new
-balance. Continue (or a tap on it) puts it away, and it goes by itself after 10 s
-(`widgets/Hud`, `client/Place`'s `earned`). The Starlights pill in the HUD's top
-left uses the shop's Starlight icon (`Cosmetics.icon`).
+**What you won.** Once a mini-game's prizes are given, each player hears what they
+got (`EARNED`, boosters included, 0 for nothing; kept in `client/Earned`). Every
+mini-game's results card says so under its heading, with the shop's Starlight icon:
+"You won +25 Starlights" or "No Starlights for you this time" (`GameUi.earned`; until
+the prize is given it shows the results' own prize for your place). The Starlights
+pill in the HUD's top left uses the same icon (`Cosmetics.icon`).
 
 **Timer.** Before and during every mini-game the middle of the HUD's head is the
 cycle's timer, the same for all of them: "Starts in" through the intro, then "Time

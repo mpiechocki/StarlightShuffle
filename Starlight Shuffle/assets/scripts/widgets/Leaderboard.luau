@@ -9,6 +9,7 @@ local r = require("@flutter/rendering")
 local ui = require("@dart/ui")
 local m = require("@flutter/material")
 local material = require("@icons/material")
+local Cosmetics = require("./Cosmetics")
 local Place = require("../client/Place")
 local Style = require("./Style")
 local Net = require("../shared/Net")
@@ -25,7 +26,7 @@ local function row(rank: number, entry: Net.Row): w.Widget
 		child = w.Row({children = {
 			w.SizedBox({width = 30, child = Style.text(tostring(rank), Style.style(15, tint, ui.FontWeight.w900))}),
 			w.Expanded({child = Style.text(entry.name, Style.style(15, Style.WHITE, ui.FontWeight.w600))}),
-			w.Icon({icon = material.star_rounded, size = 16, color = Style.GOLD}),
+			Cosmetics.icon("starlight", 17),
 			w.SizedBox({width = 4}),
 			Style.text(Style.count(entry.starlights), Style.style(15, Style.GOLD, ui.FontWeight.w800)),
 		}}),
