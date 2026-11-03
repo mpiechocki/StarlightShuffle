@@ -264,7 +264,7 @@ test.unit("a reconnect keeps seat, score and reload without counting anything tw
 	t:equal(#fake.sent, before, "the old sequence is a duplicate")
 end)
 
-test.unit("results: ranked once, three winners, the same for everyone", function(t)
+test.unit("results: ranked once, the same for everyone; nobody who scored nothing wins", function(t)
 	local fake = round(5)
 	fake.start()
 	fake.run(1000 + C.PREPARATION + C.DURATION)
@@ -275,7 +275,7 @@ test.unit("results: ranked once, three winners, the same for everyone", function
 	t:equal(results, 1)
 	local standings = assert(Rules.standings((assert(fake.last(Rules.RESULTS)))[1]))
 	t:equal(#standings, 5)
-	local winners = 0
-	for _, s in standings do if s.starlights > 0 then winners += 1 end end
-	t:equal(winners, 3)
+	-- Nobody shot: places, but no Starlights.
+	for _, s in standings do t:equal(s.starlights, 0) end
+	t:equal(next(fake.awards), nil)
 end)

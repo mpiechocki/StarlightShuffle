@@ -67,10 +67,10 @@ return {
 			if playing and playing.isValid then playing:stop() end
 		end
 
-		local function burst(cloud: Rules.Cloud, at: number, delta: number, mine: boolean)
+		local function burst(cloud: Rules.Cloud, at: number, delta: number, mine: boolean, by: string?)
 			seed += 1
 			local x, y = Rules.position(cloud, at)
-			table.insert(model.bursts, { kind = cloud.kind, x = x, y = y, at = game.clock(), delta = delta, mine = mine, seed = seed })
+			table.insert(model.bursts, { kind = cloud.kind, x = x, y = y, at = game.clock(), delta = delta, mine = mine, seed = seed, by = by })
 			while #model.bursts > MAX_BURSTS do table.remove(model.bursts, 1) end
 		end
 
@@ -136,7 +136,7 @@ return {
 			end
 			if shot.claimed and cloud then
 				model.claimed[shot.cloud] = true
-				burst(cloud, shot.at, shot.delta, mine)
+				burst(cloud, shot.at, shot.delta, mine, if player then player.name else nil)
 				if mine then
 					local kit = Assets.get()
 					if cloud.kind == "storm" then sound(kit.thunder, 0.8)

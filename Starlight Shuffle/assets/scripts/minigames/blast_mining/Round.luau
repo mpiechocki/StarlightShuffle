@@ -24,7 +24,7 @@
 -- pass unhit while they are away, and a reconnection gets the whole state
 -- (SNAPSHOT) without restarting anything. The results rank every miner by
 -- points, then by who reached their final score first, then by player id;
--- the top three take the podium and its Starlights.
+-- the top three take the podium and its Starlights, if they scored.
 local types = require("@moonbase/types")
 local Rules = require("./Rules")
 
@@ -203,7 +203,8 @@ return {
 				end
 				local standings: {Rules.Standing} = {}
 				for place, s in Rules.rank(scores) do
-					local starlights = if place <= Rules.PLACES then Rules.AWARDS[place] or 0 else 0
+					-- Only a score above zero wins a podium prize.
+					local starlights = if place <= Rules.PLACES and s.score > 0 then Rules.AWARDS[place] or 0 else 0
 					table.insert(standings, { player = s.player, name = s.name, score = s.score, place = place, starlights = starlights })
 					local miner = miners[s.player]
 					-- Awards go to winners still here to receive them.

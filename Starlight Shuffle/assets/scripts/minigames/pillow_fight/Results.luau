@@ -43,9 +43,18 @@ local function paintSparkle(canvas: ui.Canvas, size: ui.Size)
 	canvas:restore()
 end
 
-local function reward(pt: Rules.Participant?): string
+-- What [room]'s winner was paid (a winner who scored nothing wins none).
+local function prizeOf(room: Rules.RoomResult): number
+	for _, pl in room.placements do
+		if pl.participant == room.winner then return pl.starlights end
+	end
+	return 0
+end
+
+local function reward(pt: Rules.Participant?, starlights: number): string
 	if pt and pt.bot then return "Bot winner · no Starlights" end
-	return "+" .. Rules.prize(1) .. " Starlights"
+	if starlights <= 0 then return "No points · no Starlights" end
+	return "+" .. starlights .. " Starlights"
 end
 
 local function standing(model: Model, placement: Rules.Placement): w.Widget
@@ -89,7 +98,7 @@ function Results.view(model: Model): w.Widget?
 		table.insert(children, w.Text({data = nameOf(model, ours.winner), textAlign = ui.TextAlign.center, maxLines = 2,
 			overflow = w.TextOverflow.ellipsis, style = style(18, color(0xfffff0dd), ui.FontWeight.w800)}))
 		table.insert(children, w.SizedBox({height = 3}))
-		table.insert(children, w.Text({data = reward(winner), textAlign = ui.TextAlign.center, style = style(12, color(0xffffe4ab), ui.FontWeight.w800)}))
+		table.insert(children, w.Text({data = reward(winner, prizeOf(ours)), textAlign = ui.TextAlign.center, style = style(12, color(0xffffe4ab), ui.FontWeight.w800)}))
 		if ours.tieBreak and ours.tieBreak ~= "score" then
 			table.insert(children, w.Text({data = "Won on tie-break", textAlign = ui.TextAlign.center, style = style(11, GameUi.MUTED, ui.FontWeight.w700)}))
 		end
@@ -123,7 +132,7 @@ function Results.view(model: Model): w.Widget?
 					w.SizedBox({width = 9}),
 					w.Expanded({child = w.Text({data = nameOf(model, room.winner), maxLines = 1, overflow = w.TextOverflow.ellipsis,
 						style = style(13, GameUi.TEXT, ui.FontWeight.w700)})}),
-					w.Text({data = if winner and winner.bot then "bot" else "+" .. Rules.prize(1),
+					w.Text({data = if winner and winner.bot then "bot" elseif prizeOf(room) > 0 then "+" .. prizeOf(room) else "—",
 						style = style(12, color(0xffffe3ab), ui.FontWeight.w800)}),
 				}})}))
 		end

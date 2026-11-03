@@ -268,11 +268,13 @@ function Cycle.new(host: Host): Cycle
 		local rows: {Net.Row} = {}
 		local awards: {Starlights.Award} = {}
 		local bySession: {[number]: server.Player} = {}
+		local earnedBy: {[number]: number} = {}
 		for session, member in members do
 			local name = host.name(session) or ("Player " .. member.player.player_id)
 			-- Its podium prize (shared/Rewards), if any.
 			local amount = earned[session] or 0
 			bySession[session] = member.player
+			earnedBy[session] = amount
 			table.insert(rows, { player = member.player.player_id, name = name, starlights = amount })
 			if amount > 0 then table.insert(awards, { player = member.player.player_id, name = name, amount = amount }) end
 		end
@@ -296,6 +298,11 @@ function Cycle.new(host: Host): Cycle
 			end
 			if round == shown and phase == "results" then
 				server.notifyPlayers(nil, Net.RESULTS, Net.resultsValue({ game = current.id, rows = rows }))
+			end
+			-- Everyone hears what they got (0 for nothing), for the summary back in the lobby.
+			for session, player in bySession do
+				local got = if award then award.given[player.player_id] else nil
+				if player.isActive then server.notifyPlayers({player}, Net.EARNED, current.id, got or earnedBy[session] or 0) end
 			end
 			if not award then return end
 			for _, player in bySession do

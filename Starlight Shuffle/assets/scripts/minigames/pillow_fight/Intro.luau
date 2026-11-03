@@ -147,7 +147,7 @@ local function instructions(model: Model, now: number, width: number, height: nu
 		w.SizedBox({height = 12}),
 		w.Semantics({liveRegion = false, child = GameUi.instruction(LESSONS[index], true)}),
 		w.Row({mainAxisAlignment = w.MainAxisAlignment.center, children = dots}),
-		GameUi.instruction("Each group's top three earn " .. Rules.prize(1) .. ", " .. Rules.prize(2) .. " and " .. Rules.prize(3) .. " Starlights."),
+		GameUi.instruction("Each group's top three scorers earn " .. Rules.prize(1) .. ", " .. Rules.prize(2) .. " and " .. Rules.prize(3) .. " Starlights."),
 		w.SizedBox({height = 12}),
 		w.Text({data = "Starting in " .. math.max(0, math.ceil(left)) .. "s",
 			style = GameUi.style(11, GameUi.CARD_MUTED, ui.FontWeight.w800, 1)}),

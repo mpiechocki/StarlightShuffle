@@ -353,16 +353,13 @@ test.unit("one winner per room by score, knockouts, hits, deaths, then the draw 
 	t:equal(Rules.tieBreak(ranked), "hits")
 end)
 
-test.unit("results: an all-zero room still has one winner; its top three are paid once; others see only winners", function(t)
+test.unit("results: an all-zero room still has one winner but pays nobody; others see only winners", function(t)
 	local r = round(8)
 	r.fight()
 	r.run(r.schedule().endsAt + 0.1)
 	t:equal(r.finishes(), 1)
 	r.game.finish() -- the cycle's own finish afterwards changes nothing
-	local paid, total = 0, 0
-	for _, n in r.awards do paid += 1; total += n end
-	t:equal(paid, 6) -- the top three of each room (both rooms all human)
-	t:equal(total, 2 * (Rules.prize(1) + Rules.prize(2) + Rules.prize(3)))
+	t:equal(next(r.awards), nil) -- nobody scored
 	local p = r.players[1]
 	local results = assert(Rules.results(assert(r.last(Rules.RESULTS, p))[1]))
 	t:equal(#results, 2)
@@ -373,7 +370,7 @@ test.unit("results: an all-zero room still has one winner; its top three are pai
 	local places = {}
 	for _, pl in mine.placements do
 		t:truthy(not places[pl.place]); places[pl.place] = true
-		t:equal(pl.starlights, Rules.prize(pl.place))
+		t:equal(pl.starlights, 0)
 	end
 	t:equal(mine.winner, mine.placements[1].participant)
 	t:equal(mine.tieBreak, "drawOrder")
@@ -392,15 +389,27 @@ test.unit("a bot can win its room but is never paid", function(t)
 	t:truthy(r.kinds(p, "throw") > 0)
 	local winner = r.snapshot(p).participants[room.winner :: number]
 	t:truthy(winner.bot)
-	-- Bots take places but no Starlights; the human is paid for their own place only.
-	local mine = 0
-	for _, pl in room.placements do
-		if pl.participant == r.id(p) then mine = Rules.prize(pl.place) else t:equal(pl.starlights, 0) end
-	end
-	t:equal(r.awards[p.player_id], if mine > 0 then mine else nil)
+	-- Bots take places but no Starlights, and the idle human scored nothing.
+	for _, pl in room.placements do t:equal(pl.starlights, 0) end
+	t:equal(next(r.awards), nil)
+end)
+
+test.unit("only players who scored are paid, by their place", function(t)
+	local r = round(4)
+	local a, b = r.players[1], r.players[2]
+	r.fight()
+	t:equal(r.throw(a, b, 0.3), nil)
+	r.run(r.now() + C.FLIGHT + 0.05)
+	t:equal(r.actor(a).score, 1)
+	r.run(r.schedule().endsAt + 0.1)
+	t:equal(r.awards[a.player_id], Rules.prize(1))
 	local paid = 0
 	for _ in r.awards do paid += 1 end
-	t:equal(paid, if mine > 0 then 1 else 0)
+	t:equal(paid, 1)
+	local room = assert(Rules.results(assert(r.last(Rules.RESULTS, a))[1]))[1]
+	for _, pl in room.placements do
+		t:equal(pl.starlights, if pl.participant == r.id(a) then Rules.prize(1) else 0)
+	end
 end)
 
 test.unit("bots are reproducible under a seed", function(t)

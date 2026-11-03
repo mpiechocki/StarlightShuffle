@@ -23,7 +23,7 @@
 -- A human who stays disconnected RECONNECT seconds forfeits: a labelled bot
 -- takes their seat with its hearts and cooldowns, their draw ticket and a
 -- score of its own. Results: each room's seat holders by Rules.compare, one
--- winner; its top three (connected humans) get the podium prizes
+-- winner; its top three (connected humans who scored) get the podium prizes
 -- (Rules.prize, shared/Rewards); a room whose
 -- humans all left, or a round that never reached endsAt, is aborted.
 local types = require("@moonbase/types")
@@ -506,13 +506,12 @@ return {
 					local done = completed and humans
 					local placements: {Rules.Placement} = {}
 					for place, s in ranked do
-						table.insert(placements, { participant = s.participant, place = place, score = s.score, hits = s.hits, kos = s.kos,
-							deaths = s.deaths, starlights = if done and not participants[s.participant].bot then Rules.prize(place) else 0 })
-						-- The room's top three, if humans still here, take the podium prizes; bots get none.
+						-- The room's top three humans who scored take the podium prizes; bots get none.
 						local pt = participants[s.participant]
-						if done and place <= 3 and not pt.bot and pt.connected and pt.player then
-							context.award(pt.player, Rules.prize(place))
-						end
+						local prize = if done and not pt.bot and s.score > 0 then Rules.prize(place) else 0
+						table.insert(placements, { participant = s.participant, place = place, score = s.score, hits = s.hits, kos = s.kos,
+							deaths = s.deaths, starlights = prize })
+						if prize > 0 and pt.connected and pt.player then context.award(pt.player, prize) end
 					end
 					local winner = if done and ranked[1] then participants[ranked[1].participant] else nil
 					local result: Rules.RoomResult = { room = room.index, status = if done then "completed" else "aborted",

@@ -24,7 +24,8 @@
 --
 -- A player who disconnects keeps their seat, score and reload; a reconnection
 -- gets the whole state (SNAPSHOT) without restarting anything. The results
--- rank every competitor (shared/Standings); the top three take the podium.
+-- rank every competitor (shared/Standings); the top three take the podium,
+-- and its Starlights if they scored above zero.
 local types = require("@moonbase/types")
 local Rules = require("./Rules")
 
@@ -210,7 +211,8 @@ return {
 				end
 				local standings: {Rules.Standing} = {}
 				for place, s in Rules.rank(scores) do
-					local starlights = if place <= Rules.PLACES then Rules.AWARDS[place] or 0 else 0
+					-- Only a score above zero wins a podium prize.
+					local starlights = if place <= Rules.PLACES and s.score > 0 then Rules.AWARDS[place] or 0 else 0
 					table.insert(standings, { player = s.player, name = s.name, score = s.score, place = place, starlights = starlights })
 					local c = competitors[s.player]
 					-- Prizes go to winners still here to receive them.

@@ -4,7 +4,8 @@
 -- cycle, from HELLO), their Starlight balance, the cycle's current round with
 -- its countdown, whether they paused, the last results, the leaderboard and
 -- whether a move between places is under way or failed; for admins, the
--- mini-game lineup and whether its panel is open. It routes the current
+-- mini-game lineup and whether its panel is open; and what you earned in the
+-- last mini-game, kept for its summary back in the lobby. It routes the current
 -- mini-game's messages to its client module (client/Games). A transfer keeps
 -- this VM, so `onTransferred` hears it and everything instance-specific resets.
 -- Listeners hear every change.
@@ -19,6 +20,11 @@ local Minigame = require("./Minigame")
 local Modules = require("./Games")
 
 local FAILED_FOR = 4 -- seconds a failed move shows
+local SUMMARY_FOR = 10 -- seconds the lobby shows the last mini-game's summary
+
+-- What you earned in a mini-game (EARNED); `shownAt` is when the lobby began
+-- showing it (game.clock()).
+export type Earned = { game: string, starlights: number, shownAt: number? }
 
 type Fields = {
 	place: Net.Place?,
@@ -36,6 +42,7 @@ type Fields = {
 	-- Admins only (ADMIN): which mini-games cycles play, and its panel.
 	lineup: Net.Lineup?, lineupOpen: boolean,
 	moving: boolean, failed: Net.Reason?, failedAt: number,
+	earned: Earned?,
 	connection: string,
 	-- The current mini-game's client module, its id and the cycle round it is for.
 	minigame: Minigame.Minigame?, minigameId: string?, minigameRound: number,
@@ -100,6 +107,7 @@ function Place.new(): Controller
 	local self = setmetatable({
 		place = nil, session = nil, starlights = nil, round = nil, endsAt = 0, paused = false, results = nil,
 		board = nil, boardOpen = false, readyCount = 0, ready = false, cycleRunning = false, cycleGame = nil, lineup = nil, lineupOpen = false, moving = false, failed = nil, failedAt = 0,
+		earned = nil,
 		connection = "offline", minigame = nil, minigameId = nil, minigameRound = 0, scene = nil, listeners = {},
 		onTransferred = nil, unsubscribe = nil, unwatch = nil, shownSeconds = -1,
 	} :: Fields, Place)
@@ -132,6 +140,12 @@ function Place.new(): Controller
 		elseif kind == Net.RESULTS then
 			local results = Net.results(a)
 			if results then self.results = results; changed(self) end
+		elseif kind == Net.EARNED then
+			local count = Net.id(select(1, ...))
+			if type(a) == "string" and Games.get(a) and count and count >= 0 then
+				self.earned = { game = a, starlights = count, shownAt = nil }
+				changed(self)
+			end
 		elseif kind == Net.LEADERBOARD then
 			local board = Net.board(a)
 			if board then self.board = board; changed(self) end
@@ -250,6 +264,13 @@ function Place.setLineup(self: Controller, ids: {string})
 	changed(self)
 end
 
+-- Puts the last mini-game's summary away.
+function Place.dismissEarned(self: Controller)
+	if not self.earned then return end
+	self.earned = nil
+	changed(self)
+end
+
 -- Taps the current mini-game may take.
 function Place.tap(self: Controller, x: number, y: number): boolean
 	local minigame = self.minigame
@@ -312,6 +333,12 @@ function Place.update(self: Controller, dt: number)
 	if self.failed and game.clock() - self.failedAt > FAILED_FOR then
 		self.failed = nil
 		dirty = true
+	end
+	-- The last mini-game's summary shows for a while once back in the lobby.
+	local earned = self.earned
+	if earned and self.place == "lobby" and self:online() then
+		if not earned.shownAt then earned.shownAt = game.clock(); dirty = true
+		elseif game.clock() - earned.shownAt > SUMMARY_FOR then self.earned = nil; dirty = true end
 	end
 	if dirty then changed(self) end
 end

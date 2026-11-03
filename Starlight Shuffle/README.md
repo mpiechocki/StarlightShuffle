@@ -79,6 +79,13 @@ the next mini-game · Lucky Shot is on now", and whoever checks in ("You're in!
 You'll join the next mini-game") waits for the group to come back and goes with
 it after the countdown.
 
+**Summary.** Once a mini-game's prizes are given, each player hears what they
+got (`EARNED`, 0 for nothing). Back in the lobby a card says so: "+25 Starlights
+won", or "No Starlights this time" with what the top three win, and the new
+balance. Continue (or a tap on it) puts it away, and it goes by itself after 10 s
+(`widgets/Hud`, `client/Place`'s `earned`). The Starlights pill in the HUD's top
+left uses the shop's Starlight icon (`Cosmetics.icon`).
+
 **Timer.** Before and during every mini-game the middle of the HUD's head is the
 cycle's timer, the same for all of them: "Starts in" through the intro, then "Time
 left", with a draining bar, amber for the last 10 s (`widgets/Hud`, from
@@ -128,7 +135,9 @@ has been empty for 30 s (cycle) or 300 s (lobby).
 ## Starlights and the leaderboard
 
 **Rewards** (`shared/Rewards.luau`, configurable there): every mini-game pays its
-top three 50, 25 and 10 Starlights, and nobody else anything.
+top three 50, 25 and 10 Starlights, but only players who scored (points, a
+completed board, a pass, a caught star: each game's own measure); a place with
+no score wins nothing, and nobody else gets anything.
 
 `server/Starlights.luau` keeps every player's Starlight balance in `@moonbase/storage`:
 a sorted set ranks players by what they have (the shop spends from it, so the
@@ -341,7 +350,8 @@ cached paths) and `Assets` with `SceneAssets` (the art and audio, which ship wit
   stream within ±105 ms. Rock +1, gem +3, bomb −3 (never below zero). The client
   shatters its item at once and undoes that if the server's answer disagrees.
 - **Results.** Points, then whoever reached their final score first, then player id.
-  The top three get 50, 25 and 10 Starlights through the cycle. The results are sent once.
+  The top three get 50, 25 and 10 Starlights through the cycle, if they scored above
+  zero. The results are sent once.
   A miner who drops keeps their stream, score and slowdown; if they come back to the
   same cycle, a snapshot restores everything without restarting.
 - **Art and audio.** `assets/textures/blast_mining/cave.png` is the supplied cave.
@@ -394,13 +404,15 @@ adapts the cycle's context to it), `Crowd` (where every competitor stands), `Cli
   inside the 850 ms reload. Any other shot takes the reload. Then the first claim the
   server orders takes the cloud, and later or late shots score nothing. White is +1,
   gold +2, storm −1 (scores may go below zero).
-- **Feedback.** Only your own claims make a sound. Rivals' shots kick their slingshots
-  and pop their clouds silently.
+- **Feedback.** Only your own claims make a sound and show their points (+1, +2,
+  −1). Rivals' shots kick their slingshots and pop their clouds silently, with a
+  small tag naming who popped it.
 - **Crowd.** The whole roster stands in the meadow. You are large in front with a
   halo and marker; everyone else is in staggered rows by seat, smaller and higher
   toward the back. A mostly covered rear avatar is drawn a little see-through.
-- **Results and drops.** Results use the shared podium and tie policy. Reconnecting
-  restores your seat, score and reload.
+- **Results and drops.** Results use the shared podium and tie policy; a podium place
+  wins Starlights only with a score above zero. Reconnecting restores your seat, score
+  and reload.
 - **Audio.** `tools/lucky_shot_audio.py` makes the original loop and effects.
 
 `tests/lucky_shot_test.luau` checks the pace and cap, the cloud zone and lifetimes, crowd
@@ -444,7 +456,7 @@ catch, pass, burst and a quiet loop.
 - **Drops.** A competitor away for 20 s forfeits; their star is removed and the wave
   keeps its burst. Reconnecting before that keeps everything.
 - **Results.** Survivor first, then later eliminations, then passes, then seat. 50,
-  25 and 10 Starlights for the podium. If the 300 s safety timeout in its Games row
+  25 and 10 Starlights for the podium, to those who passed at least once. If the 300 s safety timeout in its Games row
   is ever reached, survivors rank by passes, then seat.
 
 `tests/star_pass_test.luau` checks star supply, wave length and tick pace, target choice
@@ -494,7 +506,7 @@ lullaby, your throw's whoosh, the two-note warning ring, the hit thud and the do
   `Rules.CONFIG.BOT`). They never receive Starlights.
 - **Results.** Each room ranks by score, knockouts, hits, fewer knockouts suffered, then
   the draw ticket: one winner, unique places. Each room's top three, if humans still
-  here, get 50, 25 and 10 Starlights (`shared/Rewards`, as in every mini-game). Your
+  here who scored, get 50, 25 and 10 Starlights (`shared/Rewards`, as in every mini-game). Your
   room shows first and in full; "Winners from other rooms" lists one winner per other
   room. A room whose humans all left, or a round the cycle ended early, is aborted and
   pays nobody.
@@ -535,8 +547,8 @@ and satellite-hit sounds.
 - **Lineup.** One shuffled, wrapping lineup per round: your two neighbours stand at the
   edges and up to six more (offsets ±2, ±3, ±4) small, faint and blurred in the
   distance. Each net update goes only to its owner and the players who show it.
-- **Results.** The whole match ranks by the shared tie policy; the top three take 50, 30
-  and 15 Starlights if they brought home at least one star.
+- **Results.** The whole match ranks by the shared tie policy; the top three take 50, 25
+  and 10 Starlights if they brought home at least one star.
 
 `tests/starcatchers_test.luau` checks the hash, star density and wave composition,
 satellite timing, the throw, top and return times, one carried star and banking, the

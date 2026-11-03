@@ -256,7 +256,7 @@ test.unit("a reconnect keeps score and stream without counting anything twice", 
 	t:equal(#fake.sent, before)
 end)
 
-test.unit("standings: points, then who got there first, then id; top three win", function(t)
+test.unit("standings: points, then who got there first, then id; only scorers win", function(t)
 	local ranked = Rules.rank({
 		{ player = 4, name = "d", score = 5, reachedAt = 10 },
 		{ player = 2, name = "b", score = 7, reachedAt = 20 },
@@ -277,7 +277,7 @@ test.unit("standings: points, then who got there first, then id; top three win",
 	t:equal(results, 1)
 	local standings = assert(Rules.standings((assert(fake.last(Rules.RESULTS)))[1]))
 	t:equal(#standings, 4)
-	local paid = 0
-	for _, n in fake.awards do paid += n end
-	t:equal(paid, Rules.AWARDS[1] + Rules.AWARDS[2] + Rules.AWARDS[3])
+	-- Nobody swung: places, but no Starlights.
+	for _, s in standings do t:equal(s.starlights, 0) end
+	t:equal(next(fake.awards), nil)
 end)

@@ -1,6 +1,8 @@
 --!strict
 -- What a mini-game pays in Starlight: only its top three places, PLACES
--- (the same in every mini-game); everyone else earns nothing. The cycle
+-- (the same in every mini-game), and only to players who scored (each
+-- mini-game's own measure: points, a finished canvas, a pass); everyone else
+-- earns nothing. The cycle
 -- boosts a player's take for a mini-game once, by their highest active
 -- booster (shared/Shop), when it is awarded.
 local Rewards = {}

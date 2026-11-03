@@ -4,7 +4,6 @@
 -- possession-scoped charging, pass races and targets, simultaneous bursts,
 -- recaps, forfeits, reconnects and the ranking.
 local test = require("@moonbase/test")
-local Rewards = require("@project/shared/Rewards")
 local Rules = require("@project/minigames/star_pass/Rules")
 local Round = require("@project/minigames/star_pass/Round")
 
@@ -302,9 +301,9 @@ test.unit("the match runs to one survivor, recaps last, then results once with a
 	t:equal(standings[1].wave, nil, "the winner was never eliminated")
 	for i = 2, #standings do t:truthy(standings[i].wave ~= nil) end
 	for i = 3, #standings do t:truthy((standings[i - 1].wave :: number) >= (standings[i].wave :: number)) end
-	local paid = 0
-	for _, n in fake.awards do paid += n end
-	t:equal(paid, Rewards.place(1) + Rewards.place(2) + Rewards.place(3))
+	-- Nobody passed: a podium, but no Starlights.
+	for _, s in standings do t:equal(s.starlights, 0) end
+	t:equal(next(fake.awards), nil)
 	fake.game.finish()
 	t:equal(#fake.all(Rules.RESULTS), 1)
 end)

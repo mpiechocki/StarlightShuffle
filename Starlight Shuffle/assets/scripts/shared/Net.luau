@@ -62,6 +62,8 @@
 --                     GAME, ...  (the current mini-game's own messages)
 --   server -> client: ROUND, round  (the phase, game and time left; again on change)
 --                     PAUSED, paused  |  RESULTS, results  |  MOVING
+--                     EARNED, gameId, starlights  (to each player, once the
+--                     mini-game's prizes are given: what they got, 0 for none)
 --                     GAME, gameId, ...  (the current mini-game's own messages)
 -- Everyone goes back to the lobby when it ends; a paused player not checked in.
 --
@@ -88,6 +90,7 @@ Net.PAUSE = "pause"
 Net.PAUSED = "paused"
 Net.ROUND = "round"
 Net.RESULTS = "results"
+Net.EARNED = "earned"
 Net.GAME = "game"
 Net.ADMIN = "admin"
 Net.LINEUP = "lineup"

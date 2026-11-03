@@ -22,7 +22,8 @@
 -- ends (context.finish). A competitor who stays disconnected FORFEIT seconds
 -- forfeits: their star is removed, the wave keeps its burst, and a match left
 -- with one competitor ends. Results rank survivors first, then later
--- eliminations, then passes, then seat; the top three take the podium.
+-- eliminations, then passes, then seat; the top three take the podium, and
+-- its Starlights if they passed at least once.
 local types = require("@moonbase/types")
 local Rules = require("./Rules")
 local Standings = require("../../shared/Standings")
@@ -343,7 +344,8 @@ return {
 				local competed = #seated >= 2
 				for place, entry in Rules.rank(entries) do
 					local c = byId[entry.player]
-					local starlights = if competed then Standings.prize(place) else 0
+					-- Only someone who passed at least once wins a podium prize.
+					local starlights = if competed and c.passes > 0 then Standings.prize(place) else 0
 					table.insert(standings, { player = c.id, name = c.name, place = place, passes = c.passes,
 						wave = c.eliminatedWave, starlights = starlights })
 					if starlights > 0 and c.connected then context.award(c.player, starlights) end

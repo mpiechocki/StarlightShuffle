@@ -47,14 +47,14 @@ function Style.card(child: w.Widget, padding: p.EdgeInsets?, radius: number?): w
 	})
 end
 
--- A pill: an icon, then a label.
-function Style.pill(icon: material.IconRef, label: string, tint: ui.Color): w.Widget
+-- A pill: an icon (an 18 px widget), then a label.
+function Style.pill(icon: w.Widget, label: string): w.Widget
 	return w.Container({
 		padding = p.EdgeInsets.symmetric({horizontal = 14, vertical = 8}),
 		decoration = p.BoxDecoration({color = Style.SURFACE, borderRadius = p.BorderRadius.circular(999),
 			border = p.Border.all({color = Style.LINE, width = 1})}),
 		child = w.Row({mainAxisSize = w.MainAxisSize.min, children = {
-			w.Icon({icon = icon, size = 18, color = tint}),
+			icon,
 			w.SizedBox({width = 6}),
 			Style.text(label, Style.style(15, Style.WHITE, ui.FontWeight.w700)),
 		}}),

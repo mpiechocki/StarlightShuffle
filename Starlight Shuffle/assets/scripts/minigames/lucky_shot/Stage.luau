@@ -10,7 +10,8 @@
 -- Before play: the instruction card with the +1/+2/-1 legend and the shared
 -- countdown in the top panel, then a large 3, 2, 1. During play: only the
 -- score and timer at the top, the slingshot reload meter at the right and
--- brief impact numbers. After: the shared results podium.
+-- brief impact numbers on your own pops (a rival's pop shows a small tag with
+-- who popped it instead). After: the shared results podium.
 --
 -- Cost per frame stays small: the crowd's avatars rebuild only when the
 -- roster changes; clouds, slingshots, raindrops, lightning and labels are
@@ -39,7 +40,8 @@ local function color(v: number): ui.Color return ui.Color({value = v}) end
 local TOUCH_SLACK = 8 -- logical pixels around a cloud that still count as on it
 local BURST = 0.85 -- seconds a pop or lightning plays
 
-export type Burst = { kind: Rules.Kind, x: number, y: number, at: number, delta: number, mine: boolean, seed: number }
+-- `by` is the popper's name (shown on a rival's pop).
+export type Burst = { kind: Rules.Kind, x: number, y: number, at: number, delta: number, mine: boolean, seed: number, by: string? }
 export type Model = {
 	frame: foundation.ChangeNotifier, -- every frame
 	changed: foundation.ChangeNotifier, -- roster, scores, phase and results
@@ -127,6 +129,21 @@ local function label(text: string, size: number, color: number): p.TextPainter
 	return painter
 end
 
+-- A rival's pop tag: their name, short, laid out once.
+local MAX_TAG = 16 -- characters
+local tags: {[string]: p.TextPainter} = {}
+local function tag(name: string): p.TextPainter
+	local painter = tags[name]
+	if painter then return painter end
+	local short = if utf8.len(name) and (utf8.len(name) :: number) > MAX_TAG
+		then string.sub(name, 1, (utf8.offset(name, MAX_TAG + 1) :: number) - 1) .. "…" else name
+	painter = p.TextPainter({text = p.TextSpan({text = short, style = p.TextStyle({fontFamily = fonts.lato, fontSize = 11,
+		fontWeight = ui.FontWeight.w800, color = color(0xfffaf6ff)})}), textDirection = ui.TextDirection.ltr})
+	painter:layout({})
+	tags[name] = painter
+	return painter
+end
+
 local function paintBurst(model: Model, canvas: ui.Canvas, b: Burst, width: number, height: number, clock: number)
 	local t = (clock - b.at) / BURST
 	if t >= 1 then return end
@@ -144,12 +161,22 @@ local function paintBurst(model: Model, canvas: ui.Canvas, b: Burst, width: numb
 			Art.drop(canvas, x + dx * t, y + fall, 7, color, 1 - t)
 		end
 	end
-	local text = if b.delta > 0 then "+" .. b.delta else "−" .. math.abs(b.delta)
-	local painter = label(text, if b.mine then 22 else 12, if b.delta < 0 then 0xfff0bd else 0xfff9ff)
+	-- Your own pop: its points; a rival's: a small tag saying who popped it.
+	local painter: p.TextPainter
+	if b.mine then
+		painter = label(if b.delta > 0 then "+" .. b.delta else "−" .. math.abs(b.delta), 22, if b.delta < 0 then 0xfff0bd else 0xfff9ff)
+	else
+		painter = tag(b.by or "Someone")
+	end
 	local rise = if model.reduced then 0 else 24 * t
 	canvas:save()
 	if t > 0.6 then canvas:saveLayer(nil, Art.paint(0x000000, 1 - (t - 0.6) / 0.4)) end
-	painter:paint(canvas, ui.Offset({dx = x - painter.width / 2, dy = y - 26 - rise}))
+	local left, top = x - painter.width / 2, y - 26 - rise
+	if not b.mine then
+		canvas:drawRRect(ui.RRect.fromRectAndRadius(ui.Rect.fromLTWH(left - 6, top - 2, painter.width + 12, painter.height + 4),
+			ui.Radius.circular(99)), Art.paint(0x3a2b5c, 0.78))
+	end
+	painter:paint(canvas, ui.Offset({dx = left, dy = top}))
 	if t > 0.6 then canvas:restore() end
 	canvas:restore()
 end
